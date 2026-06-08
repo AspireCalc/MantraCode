@@ -7,6 +7,10 @@ import { StatusBar } from "./status-bar";
 import { CommanMenu } from "./command-menu";
 import type { Command } from "./command-menu/types";
 import { useCommandMenu } from "./command-menu/use-command-menu";
+import { useToast } from "../providers/toast";
+import { useKeyboardLayer } from "../providers/keyboard-layer";
+import { useDialog } from "../providers/dialog";
+import { useTheme } from "../providers/theme";
 
 type Props = {
     onSubmit: (text: string) => void;
@@ -24,6 +28,10 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
     const textareaRef = useRef<TextareaRenderable>(null);
     const onSubmitRef = useRef<() => void>(() => { });
     const renderer = useRenderer();
+    const toast = useToast();
+    const dialog = useDialog();
+    const { isTopLayer, setResponder } = useKeyboardLayer();
+    const { colors } = useTheme();
 
     const {
         showCommandMenu,
@@ -64,13 +72,15 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
         if (command.action) {
             command.action({
                 exit: () => renderer.destroy(),
+                toast,
+                dialog,
             })
         } else {
             textarea.insertText(command.value + " ");
         }
-    }, [renderer]);
+    }, [renderer, toast]);
 
-     const handleCommandExecute = useCallback((index: number) => {
+    const handleCommandExecute = useCallback((index: number) => {
         const command = resolveCommand(index);
         handleCommand(command)
     }, [resolveCommand, handleCommand]);
@@ -96,11 +106,26 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
         handleSubmit();
     }
 
+    useEffect(() => {
+        setResponder("base", () => {
+            if (disabled) return false;
+
+            const textarea = textareaRef.current;
+            if (textarea && textarea.plainText.length > 0) {
+              textarea.setText("");
+              return true;
+            };
+            return false;
+        });
+
+        return () => setResponder("base", null);
+    }, [disabled, setResponder])
+
     return (
         <box width="100%" alignItems="center">
             <box
                 border={["left"]}
-                borderColor={"#FF651D"}
+                borderColor={colors.primary}
                 customBorderChars={{
                     ...EmptyBorder,
                     vertical: "┃",
@@ -113,7 +138,7 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
                     justifyContent="center"
                     paddingX={2}
                     paddingY={1}
-                    backgroundColor={"#1A1A24"}
+                    backgroundColor={colors.surface}
                     width={"100%"}
                     gap={1}
                 >
@@ -123,7 +148,7 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
                             bottom="100%"
                             left={0}
                             width={"100%"}
-                            backgroundColor={"#1A1A1A"}
+                            backgroundColor={colors.surface}
                             zIndex={10}
                         >
                             <CommanMenu
@@ -137,7 +162,7 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
                     )}
                     <textarea
                         ref={textareaRef}
-                        focused={!disabled}
+                        focused={!disabled && (isTopLayer("base") || isTopLayer("command"))}
                         maxHeight={20}
                         keyBindings={TEXTAREA_KEY_BINDINGS}
                         onContentChange={handleTextareaContentChange}
