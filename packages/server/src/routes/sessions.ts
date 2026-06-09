@@ -3,8 +3,8 @@ import { zValidator } from "@hono/zod-validator";
 import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { findSupportedChatModel } from "@mantracode/shared";
-import { db, Role, Mode, MessageStatus } from "@mantracode/database";
-
+import { db } from "@mantracode/database/client";
+import { Role, Mode, MessageStatus } from "@mantracode/database/enums";
 
 const createSessionSchema = z.object({
     title: z.string(),
