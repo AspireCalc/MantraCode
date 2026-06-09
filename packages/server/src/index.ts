@@ -15,7 +15,7 @@ app.onError((error, c) => {
     console.error("Unhandled server error", error);
 
     return c.json({
-        error: "Internal sever error"
+        error: "Internal server error"
     }, 500);
 });
 
