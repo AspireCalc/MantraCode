@@ -18,7 +18,7 @@ export function BotMessage({ model, content }: Props) {
 
             <box paddingX={3} paddingBottom={1} gap={1} width={"100%"}>
                 <box flexDirection="row" gap={2}>
-                    <text selectable={false} fg={colors.primary}>&#9673;</text>
+                    <text selectable={false} fg={colors.primary}>◉</text>
                     <text>{model}</text>
                 </box>
             </box>
