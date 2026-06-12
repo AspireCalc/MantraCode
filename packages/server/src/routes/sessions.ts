@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-import { HTTPException } from "hono/http-exception";
+// import { HTTPException } from "hono/http-exception";
+import * as Sentry from "@sentry/hono/bun";
 import { z } from "zod";
 import { findSupportedChatModel } from "@mantracode/shared";
 import { db } from "@mantracode/database/client";
@@ -21,6 +22,11 @@ const createSessionSchema = z.object({
 
 const createSessionValidator = zValidator("json", createSessionSchema, (result, c) => {
     if (!result.success) {
+        Sentry.logger.warn("Session creation validation failed", {
+            path: c.req.path,
+            issues: result.error.issues.length,
+        });
+
         return c.json({ error: "Invalid request body" }, 400);
     }
 });
@@ -35,6 +41,10 @@ const app = new Hono()
                 createdAt: true
             },
         });
+
+        Sentry.logger.info("Listed sessions", {
+            count: sessions.length,
+        })
 
         return c.json(sessions);
     })
@@ -54,35 +64,52 @@ const app = new Hono()
         });
 
         if (!session) {
+            Sentry.logger.warn("Session not found", {
+                sessionId: id,
+                userId: "mock-user",
+            });
+
             return c.json({ error: "Session not found" }, 404);
         }
+
+        Sentry.logger.info("Loaded session", {
+            sessionId: session.id,
+            messageCount: session.messages.length,
+        });
 
         return c.json(session);
     })
     .post("/", createSessionValidator, async (c) => {
-    const { initialMessage, ...data } = c.req.valid("json");
+        const { initialMessage, ...data } = c.req.valid("json");
 
-    const session = await db.session.create({
-        data: {
-            ...data,
-            userId: "mock-user",
-            ...(initialMessage && {
-                messages: {
-                    create: {
-                        role: initialMessage.role,
-                        content: initialMessage.content,
-                        mode: initialMessage.mode,
-                        model: initialMessage.model,
-                        status: MessageStatus.COMPLETE,
-                        duration: 0,
+        const session = await db.session.create({
+            data: {
+                ...data,
+                userId: "mock-user",
+                ...(initialMessage && {
+                    messages: {
+                        create: {
+                            role: initialMessage.role,
+                            content: initialMessage.content,
+                            mode: initialMessage.mode,
+                            model: initialMessage.model,
+                            status: MessageStatus.COMPLETE,
+                            duration: 0,
+                        },
                     },
-                },
-            }),
-        },
-        include: { messages: true },
-    });
+                }),
+            },
+            include: { messages: true },
+        });
 
-    return c.json(session, 201);
-});
+        Sentry.logger.info("Created session", {
+            sessionId: session.id,
+            title: session.title,
+            hasInitialMessage: session.messages.length > 0,
+            cwd: session.cwd,
+        });
+
+        return c.json(session, 201);
+    });
 
 export default app;
