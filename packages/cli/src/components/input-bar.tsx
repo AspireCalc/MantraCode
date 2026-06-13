@@ -18,10 +18,12 @@ type Props = {
 };
 
 export const TEXTAREA_KEY_BINDINGS: KeyBinding[] = [
-    { name: "return", action: "submit" },
-    { name: "enter", action: "submit" },
-    { name: "return", shift: true, action: "newline" },
-    { name: "enter", shift: true, action: "newline" },
+    // Define the specific modifiers first to ensure they get caught
+    { name: "return", shift: true, action: "submit" },
+    { name: "enter", shift: true, action: "submit" },
+    // Explicitly set shift: false for standard enters to create newlines
+    { name: "return", shift: false, action: "newline" },
+    { name: "enter", shift: false, action: "newline" },
 ]
 
 export function InputBar({ onSubmit, disabled = false }: Props) {
