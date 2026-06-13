@@ -1,20 +1,20 @@
 {
   "name": "mantracode",
   "version": "1.0.0",
-  "description": "Mantram an agentic code model, AI",
-  "workspaces": [
-    "packages/*"
-  ],
+  "author": "Nishant Chauhan",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AspireCalc/MantraCode.git"
   },
-  "license": "ISC",
-  "author": "Nishant Chauhan",
-  "type": "commonjs",
   "main": "index.js",
+  "description": "Mantram an agentic code model, AI",
+  "license": "ISC",
   "scripts": {
     "dev:cli": "bun run --watch packages/cli/src/index.tsx",
-    "dev:server": "bun run --hot packages/server/src/index.ts",
-  }
+    "dev:server": "bun run --hot packages/server/src/index.ts"
+  },
+  "type": "commonjs",
+  "workspaces": [
+    "packages/*"
+  ]
 }

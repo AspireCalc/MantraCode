@@ -49,7 +49,7 @@ model Message {
   content   String
   parts     Json?
   mode      Mode
-  duration  Int
+  duration  Int?
   createdAt DateTime     @default(now())
   session   Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 

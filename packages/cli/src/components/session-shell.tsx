@@ -8,9 +8,10 @@ type Props = {
     onSubmit: (text: string) => void;
     inputDisabled?: boolean;
     loading?: boolean;
+    interruptible?: boolean;
 };
 
-export function SessionShell({ children, onSubmit, inputDisabled = false, loading = false }: Props) {
+export function SessionShell({ children, onSubmit, inputDisabled = false, loading = false, interruptible = false }: Props) {
 
     return (
         <box
@@ -28,7 +29,7 @@ export function SessionShell({ children, onSubmit, inputDisabled = false, loadin
             <box flexShrink={0}>
                 <InputBar onSubmit={onSubmit} disabled={inputDisabled} />
             </box>
-            <box 
+            <box
                 flexShrink={0}
                 flexDirection="row"
                 justifyContent="space-between"
@@ -38,7 +39,17 @@ export function SessionShell({ children, onSubmit, inputDisabled = false, loadin
                 paddingLeft={1}
             >
                 <box flexDirection="row" alignItems="center" gap={2}>
-                    {loading ? <Spinner /> : null}
+                    {loading ? (
+                        <>
+                            <Spinner />
+                            {interruptible ? <text>esc to interrupt</text> : null}
+                        </>
+                    ) : null}
+                </box>
+
+                <box flexDirection="row" gap={1}>
+                    <text selectable={false} attributes={TextAttributes.BOLD}>shift + enter</text>
+                    <text selectable={false} attributes={TextAttributes.DIM}>submit</text>
                 </box>
 
                 <box flexDirection="row" gap={1} flexShrink={0} marginLeft={"auto"}>
