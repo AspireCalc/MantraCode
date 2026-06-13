@@ -123,7 +123,7 @@ export function useChat(
                 interrupted: true,
             },
         ]);
-    }, []);
+    }, [updateMessages]);
 
     const startReveal = useCallback(() => {
         if (intervalRef.current) return;
