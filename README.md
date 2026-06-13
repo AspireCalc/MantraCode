@@ -14,8 +14,22 @@ This is a monorepo with four packages:
 |---------|-------------|
 | **`@mantracode/cli`** | React-based TUI client using OpenTUI — the main user-facing application |
 | **`@mantracode/server`** | Hono HTTP API server powering the backend |
-| **`@mantracode/database`** | Prisma schema, client, and PostgreSQL integration (Neon.tech) |
+| **`@mantracode/database`** | Prisma schema, client, and PostgreSQL integration |
 | **`@mantracode/shared`** | Shared types, Zod schemas, AI model definitions, and streaming protocol |
+
+### Streaming Protocol
+
+AI responses are streamed from the server to the CLI via **Server-Sent Events (SSE)** with Zod-validated event types:
+
+- **`text-delta`** — Incremental text tokens as the model generates
+- **`done`** — Stream completed with the final message ID and duration
+- **`error`** — Stream terminated with an error message
+
+The server tracks per-stream state (`StreamState` — controller, accumulated content, model, mode) in an in-memory map, enabling it to persist the authoritative accumulated text on interrupt rather than relying on client-supplied data.
+
+### Letter-by-Letter Reveal
+
+The CLI reveals incoming text gradually for a smooth reading experience. Tokens are buffered in a `fullTextRef` while an interval ticks to reveal characters into `displayedTextRef`. The reveal continues at an increased rate even after the stream finishes, ensuring the entire response is animated without a final jump.
 
 ---
 
@@ -24,9 +38,11 @@ This is a monorepo with four packages:
 - **Terminal-First TUI** — A rich, keyboard-driven interface powered by React + OpenTUI
 - **Session Management** — Create, list, and view AI chat sessions persisted to PostgreSQL
 - **Slash Commands** — `/new`, `/sessions`, `/theme`, `/models`, `/agents`, `/exit`, and more
-- **30 Built-in Themes** — Catppuccin, Dracula, Tokyo Night, Nord, Rose Pine, and many others with live preview
+- **Built-in Themes** — Catppuccin, Dracula, Tokyo Night, Nord, Rose Pine, and many others with live preview
 - **Type-Safe RPC** — End-to-end type safety from server routes to the CLI via Hono's typed client
-- **AI Streaming Protocol** — Zod-validated streaming events (text deltas, reasoning, tool calls, errors)
+- **Server-Authoritative Interrupt Handling** — Interrupted streams persist the server's accumulated text, not client-supplied data
+- **Per-Session Stream Serialization** — Active streams are tracked and concurrent submissions for the same session are rejected with 409
+- **Smooth Letter-by-Letter Streaming** — Gradual character reveal with no final instant jump, at 4 chars per 16ms tick
 - **Sentry Observability** — Error tracking on the server
 - **Keyboard Layer System** — Stack-based keyboard focus management across input, command menu, and dialogs
 
@@ -77,14 +93,29 @@ bun run dev:cli
 
 ---
 
+## API Routes
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/:sessionId` | Submit a new user message and start streaming |
+| `POST` | `/:sessionId/resume` | Resume streaming for the last pending user message |
+| `POST` | `/:sessionId/interrupt` | Interrupt an active stream and persist server-accumulated text |
+
+---
+
 ## Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://...` |
 | `APP_URL` | Server URL for the CLI client | `http://localhost:3000` |
-| `SENTRY_DSN` | Sentry DSN for error tracking | — |
-| `SENTRY_ENVIRONMENT` | Sentry environment tag | — |
+| `ANTHROPIC_API_KEY` | Anthropic API Key | — |
+| `OPENAI_API_KEY` | OpenAI API Key | — |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Google generative AI API key | — |
+| `XAI_API_KEY` | xAI(grok) API key | — |
+| `GOOGLE_PROJECT_ID` | Google Project ID | — |
+| `GOOGLE_VERTEX_LOCATION` | Google Vertext Location | `global` |
+| `GOOGLE_VERTEX_PROJECT` | Google Vertext Project Name | — |
 
 ---
 
@@ -100,7 +131,7 @@ bun run dev:cli
 | **Zod** | Runtime schema validation |
 | **Sentry** | Error tracking and observability |
 | **React 19** | Component model for the TUI |
-| **Neon.tech** | Cloud PostgreSQL |
+| **AI SDK** | AI model invocation and streaming |
 
 ---
 
@@ -109,7 +140,10 @@ bun run dev:cli
 - [x] Session CRUD (create, list, view)
 - [x] TUI navigation, input, and routing
 - [x] Theme system with persistence
-- [ ] AI model invocation and streaming
+- [x] AI model invocation and streaming
+- [x] Server-authoritative interrupt handling
+- [x] Per-session stream serialization
+- [x] Smooth letter-by-letter reveal animation
 - [ ] Agent/tool calling support
 - [ ] Usage tracking and billing
 - [ ] Authentication
@@ -124,3 +158,7 @@ ISC
 ## Author
 
 **Nishant Chauhan**
+
+## Organisation
+
+**AspireNX**

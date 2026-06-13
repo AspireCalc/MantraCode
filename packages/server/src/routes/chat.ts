@@ -20,20 +20,15 @@ const submitValidator = zValidator("json", submitSchema, (result, c) => {
     }
 });
 
-const interruptSchema = z.object({
-    content: z.string(),
-    mode: z.enum(Mode),
-    model: z.string().refine(isSupportedChatModel, "Unsupported model"),
-});
-
-const interruptValidator = zValidator("json", interruptSchema, (result, c) => {
-    if (!result.success) {
-        return c.json({ error: "Invalid request body" }, 400);
-    }
-});
+type StreamState = {
+    controller: AbortController;
+    content: string;
+    model: string;
+    mode: Mode;
+};
 
 const activeResumeSessionIds = new Set<string>();
-const activeStreamControllers = new Map<string, AbortController>();
+const activeStreamControllers = new Map<string, StreamState>();
 
 function buildConversationHistory(
     messages: {
@@ -80,16 +75,16 @@ type StreamParams = {
     }[];
     mode: Mode;
     abortController: AbortController;
+    streamState: StreamState;
 };
 
 async function streamAIResponse(
     stream: Parameters<Parameters<typeof streamSSE>[1]>[0],
     params: StreamParams,
 ) {
-    const { sessionId, model, history, mode, abortController } = params;
+    const { sessionId, model, history, mode, abortController, streamState } = params;
     const startTime = Date.now();
     const resolvedModel = resolveChatModel(model);
-    let fullText = "";
 
     try {
         const result = aiStreamText({
@@ -102,7 +97,7 @@ async function streamAIResponse(
             if (stream.aborted) break;
 
             if (part.type === "text-delta") {
-                fullText += part.text;
+                streamState.content += part.text;
                 const event: ChatStreamEvent = { type: "text-delta", text: part.text };
                 await stream.writeSSE({ event: "text-delta", data: JSON.stringify(event) });
             }
@@ -128,7 +123,7 @@ async function streamAIResponse(
                 role: "ASSISTANT",
                 status: MessageStatus.COMPLETE,
                 model,
-                content: fullText,
+                content: streamState.content,
                 mode,
                 duration: Math.round(elapsedMs / 1000),
             },
@@ -186,15 +181,21 @@ const app = new Hono()
             return c.json({ error: `Session uses unsupported model: ${resumableMessage.model}` }, 409);
         }
 
-        if (activeResumeSessionIds.has(sessionId)) {
-            return c.json({ error: "Session already has an active resume" }, 409);
+        if (activeStreamControllers.has(sessionId)) {
+            return c.json({ error: "Session already has an active stream" }, 409);
         }
-
-        activeResumeSessionIds.add(sessionId);
 
         const history = buildConversationHistory(session.messages);
         const abortController = new AbortController();
-        activeStreamControllers.set(sessionId, abortController);
+        const streamState: StreamState = {
+            controller: abortController,
+            content: "",
+            model: resumableMessage.model,
+            mode: resumableMessage.mode,
+        };
+
+        activeResumeSessionIds.add(sessionId);
+        activeStreamControllers.set(sessionId, streamState);
 
         try {
             return streamSSE(
@@ -211,6 +212,7 @@ const app = new Hono()
                             history,
                             mode: resumableMessage.mode,
                             abortController,
+                            streamState,
                         });
                     } finally {
                         activeResumeSessionIds.delete(sessionId);
@@ -266,7 +268,13 @@ const app = new Hono()
         ]);
 
         const abortController = new AbortController();
-        activeStreamControllers.set(sessionId, abortController);
+        const streamState: StreamState = {
+            controller: abortController,
+            content: "",
+            model: data.model,
+            mode: data.mode,
+        };
+        activeStreamControllers.set(sessionId, streamState);
 
         return streamSSE(
             c,
@@ -281,6 +289,7 @@ const app = new Hono()
                     history,
                     mode: data.mode,
                     abortController,
+                    streamState,
                 });
             },
             async (err, stream) => {
@@ -291,24 +300,29 @@ const app = new Hono()
             }
         )
     })
-    .post("/:sessionId/interrupt", interruptValidator, async (c) => {
+    .post("/:sessionId/interrupt", zValidator("json", z.object({
+        content: z.string().optional(),
+    })), async (c) => {
         const sessionId = c.req.param("sessionId");
-        const data = c.req.valid("json");
+        const { content: interruptedContent } = c.req.valid("json");
 
-        activeStreamControllers.get(sessionId)?.abort();
+        const streamState = activeStreamControllers.get(sessionId);
+        if (streamState) {
+            streamState.controller.abort();
 
-        await db.message.create({
-            data: {
-                sessionId,
-                role: "ASSISTANT",
-                status: MessageStatus.INTERRUPTED,
-                model: data.model,
-                content: data.content,
-                mode: data.mode,
-            },
-        });
+            await db.message.create({
+                data: {
+                    sessionId,
+                    role: "ASSISTANT",
+                    status: MessageStatus.INTERRUPTED,
+                    model: streamState.model,
+                    content: interruptedContent ?? streamState.content,
+                    mode: streamState.mode,
+                },
+            });
 
-        activeStreamControllers.delete(sessionId);
+            activeStreamControllers.delete(sessionId);
+        }
 
         return c.json({ success: true });
     });

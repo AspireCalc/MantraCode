@@ -91,18 +91,24 @@ function SessionChat({ session }: { session: SessionData }) {
             loading={streaming.status === "streaming"}
             interruptible={streaming.status === "streaming"}
         >
-            {messages.map((msg) => (
-                <ChatMessage key={msg.id} msg={msg} />
-            ))}
-            {streaming.status === "streaming" && streaming.parts.length > 0 && (
-                <BotMessage
-                    parts={streaming.parts}
-                    model={streaming.model}
-                    mode={streaming.mode}
-                    displayText={streaming.displayText}
-                    streaming
-                />
-            )}
+            {[...messages, ...(streaming.status === "streaming" && streaming.parts.length > 0
+                ? [{ _key: "__streaming__" as const, parts: streaming.parts, model: streaming.model, mode: streaming.mode, displayText: streaming.displayText }]
+                : []
+            )].map((item) => {
+                if ("_key" in item) {
+                    return (
+                        <BotMessage
+                            key="__streaming__"
+                            parts={item.parts}
+                            model={item.model}
+                            mode={item.mode}
+                            displayText={item.displayText}
+                            streaming
+                        />
+                    );
+                }
+                return <ChatMessage key={item.id} msg={item as Message} />;
+            })}
         </SessionShell>
     )
 }

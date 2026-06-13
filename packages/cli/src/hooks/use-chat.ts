@@ -7,7 +7,7 @@ import { getErrorMessage } from "../lib/https-errors";
 import type { Mode } from "@mantracode/database/enums";
 import { chatStreamEventSchema, type SupportedChatModelId } from "@mantracode/shared";
 
-const REVEAL_CHARS_PER_TICK = 2;
+const REVEAL_CHARS_PER_TICK = 4;
 const REVEAL_TICK_MS = 16;
 
 export type ClientMessagePart = { type: "text", text: string };
@@ -52,6 +52,7 @@ type ActiveStream = {
     model: SupportedChatModelId;
     parts: ClientMessagePart[];
     interruptedCaptured: boolean;
+    done: boolean;
 };
 
 type SubmitParams = {
@@ -76,6 +77,15 @@ export function useChat(
     const fullTextRef = useRef("");
     const displayedTextRef = useRef("");
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const streamDoneRef = useRef(false);
+    const pendingMessageRef = useRef<{
+        id: string;
+        parts: ClientMessagePart[];
+        fullText: string;
+        durationMs: number;
+        mode: Mode;
+        model: SupportedChatModelId;
+    } | null>(null);
 
     const updateMessages = useCallback((updater: (prev: Message[]) => Message[]) => {
         setMessages((prev) => updater(prev));
@@ -103,23 +113,33 @@ export function useChat(
         });
     }, [isActiveRequest]);
 
-    const captureInterruptedMessage = useCallback((activeStream: ActiveStream) => {
+    const captureInterruptedMessage = useCallback((activeStream: ActiveStream, partsSnapshot?: ClientMessagePart[], displayedTextSnapshot?: string) => {
         if (activeStream.interruptedCaptured) return;
-
-        const capturedText = displayedTextRef.current;
-        if (!capturedText) return;
+        if (activeStream.done) return;
 
         activeStream.interruptedCaptured = true;
+
+        const parts = partsSnapshot ?? activeStream.parts;
+        const capturedText = parts
+            .filter((p) => p.type === "text")
+            .map((p) => p.text)
+            .join("");
+        if (!capturedText) return;
+
+        const content = displayedTextSnapshot || capturedText;
+        const messageParts = displayedTextSnapshot
+            ? [{ type: "text" as const, text: displayedTextSnapshot }]
+            : [...parts];
 
         updateMessages((prev) => [
             ...prev,
             {
                 id: crypto.randomUUID(),
                 role: "assistant",
-                content: capturedText,
+                content,
                 mode: activeStream.mode,
                 model: activeStream.model,
-                parts: [{ type: "text", text: capturedText }],
+                parts: messageParts,
                 interrupted: true,
             },
         ]);
@@ -130,9 +150,15 @@ export function useChat(
 
         intervalRef.current = setInterval(() => {
             const full = fullTextRef.current;
+
             setStreaming((prev) => {
                 if (prev.status !== "streaming") return prev;
-                if (prev.displayText.length >= full.length) return prev;
+                if (prev.displayText.length >= full.length) {
+                    if (streamDoneRef.current) {
+                        return { status: "idle" };
+                    }
+                    return prev;
+                }
                 const nextLen = Math.min(
                     prev.displayText.length + REVEAL_CHARS_PER_TICK,
                     full.length,
@@ -144,8 +170,31 @@ export function useChat(
                     displayText: next,
                 };
             });
+
+            if (streamDoneRef.current && displayedTextRef.current.length >= fullTextRef.current.length) {
+                const pending = pendingMessageRef.current;
+                if (pending) {
+                    pendingMessageRef.current = null;
+                    updateMessages((prev) => [
+                        ...prev,
+                        {
+                            id: pending.id,
+                            role: "assistant",
+                            content: pending.fullText,
+                            mode: pending.mode,
+                            model: pending.model,
+                            duration: prettyMs(pending.durationMs),
+                            parts: pending.parts,
+                        },
+                    ]);
+                }
+                if (intervalRef.current) {
+                    clearInterval(intervalRef.current);
+                    intervalRef.current = null;
+                }
+            }
         }, REVEAL_TICK_MS);
-    }, []);
+    }, [updateMessages]);
 
     const stopReveal = useCallback(() => {
         if (intervalRef.current) {
@@ -158,6 +207,11 @@ export function useChat(
         if (!isActiveRequest(requestId)) return;
 
         activeStreamRef.current = null;
+
+        if (streamDoneRef.current) {
+            return;
+        }
+
         stopReveal();
         setStreaming({ status: "idle" });
     }, [isActiveRequest, stopReveal]);
@@ -218,14 +272,22 @@ export function useChat(
                 }
                 case "done": {
                     if (!isActiveRequest(activeStream.requestId)) return;
+                    activeStream.done = true;
+                    streamDoneRef.current = true;
 
                     fullTextRef.current = parts
                         .filter((p) => p.type === "text")
                         .map((p) => p.text)
                         .join("");
-                    displayedTextRef.current = fullTextRef.current;
 
-                    stopReveal();
+                    pendingMessageRef.current = {
+                        id: event.messageId,
+                        parts: [...parts],
+                        fullText: fullTextRef.current,
+                        durationMs: event.durationMs,
+                        mode: activeStream.mode,
+                        model: activeStream.model,
+                    };
 
                     setStreaming((prev) => {
                         if (prev.status !== "streaming") return prev;
@@ -233,24 +295,8 @@ export function useChat(
                             ...prev,
                             parts: [...parts],
                             fullText: fullTextRef.current,
-                            displayText: fullTextRef.current,
                         };
                     });
-
-                    const fullText = fullTextRef.current;
-
-                    updateMessages((prev) => [
-                        ...prev,
-                        {
-                            id: event.messageId,
-                            role: "assistant",
-                            content: fullText,
-                            mode: activeStream.mode,
-                            model: activeStream.model,
-                            duration: prettyMs(event.durationMs),
-                            parts: [...parts],
-                        },
-                    ]);
                     break;
                 }
                 case "error":
@@ -265,7 +311,7 @@ export function useChat(
                     break;
             }
         }
-    }, [updateMessages, emitParts, isActiveRequest, stopReveal]);
+    }, [updateMessages, emitParts, isActiveRequest]);
 
     const runStream = useCallback(async ({ mode, model, request }: RunStreamParams) => {
         const controller = new AbortController();
@@ -276,8 +322,12 @@ export function useChat(
             model,
             parts: [],
             interruptedCaptured: false,
+            done: false,
         };
 
+        stopReveal();
+        streamDoneRef.current = false;
+        pendingMessageRef.current = null;
         fullTextRef.current = "";
         displayedTextRef.current = "";
         activeStreamRef.current = activeStream;
@@ -317,24 +367,58 @@ export function useChat(
         const activeStream = activeStreamRef.current;
         if (!activeStream) return;
 
-        if (capturePartial) {
-            const capturedText = displayedTextRef.current;
-            if (capturedText) {
-                try {
-                    await apiClient.chat[":sessionId"].interrupt.$post({
-                        param: { sessionId },
-                        json: { content: capturedText, model: activeStream.model, mode: activeStream.mode },
-                    });
-                } catch {}
+        if (activeStream.done) {
+            activeStreamRef.current = null;
+            const pending = pendingMessageRef.current;
+            pendingMessageRef.current = null;
+            if (pending) {
+                updateMessages((prev) => [
+                    ...prev,
+                    {
+                        id: pending.id,
+                        role: "assistant",
+                        content: pending.fullText,
+                        mode: pending.mode,
+                        model: pending.model,
+                        duration: prettyMs(pending.durationMs),
+                        parts: pending.parts,
+                    },
+                ]);
             }
-            captureInterruptedMessage(activeStream);
+            stopReveal();
+            setStreaming({ status: "idle" });
+            return;
+        }
+
+        if (capturePartial) {
+            const partsSnapshot = [...activeStream.parts];
+            const displayedTextSnapshot = displayedTextRef.current;
+            const capturedText = partsSnapshot
+                .filter((p) => p.type === "text")
+                .map((p) => p.text)
+                .join("");
+
+            if (capturedText) {
+                apiClient.chat[":sessionId"].interrupt.$post({
+                    param: { sessionId },
+                    json: { content: displayedTextSnapshot || capturedText },
+                }).catch(() => {});
+            }
+
+            captureInterruptedMessage(activeStream, partsSnapshot, displayedTextSnapshot);
+
+            activeStreamRef.current = null;
+            activeStream.controller.abort();
+            stopReveal();
+            setStreaming({ status: "idle" });
+            return;
         }
 
         activeStreamRef.current = null;
         stopReveal();
         setStreaming({ status: "idle" });
         activeStream.controller.abort();
-    }, [captureInterruptedMessage, stopReveal]);
+    }, [captureInterruptedMessage, stopReveal, updateMessages]);
 
     const resume = useCallback(async ({ mode, model }: Omit<SubmitParams, "userText">) => {
         await runStream({
