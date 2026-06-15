@@ -65,10 +65,17 @@ function assertUnsupportedProvider(provider: never): never {
 //     };
 // }
 
+const CLAUDE_MODEL_PREFIXES = ["claude-"] as const;
+
+function isClaudeModel(modelId: string): boolean {
+    const lowerModelId = modelId.toLowerCase();
+    return CLAUDE_MODEL_PREFIXES.some(prefix => lowerModelId.startsWith(prefix));
+}
+
 function resolveGoogleVertexModel(modelId: GoogleVertexModelId): ResolvedModel {
     // 4. Use the correct provider instance depending on the chosen model ID
     // vertexAnthropicProvider handles Claude, vertexProvider handles Gemini
-    const modelInstance = modelId.toLowerCase().includes("claude")
+    const modelInstance = isClaudeModel(modelId)
         ? vertexAnthropicProvider(modelId)
         : vertexProvider.languageModel(modelId);
 
@@ -114,7 +121,7 @@ export function isSupportedChatModel(modelId: string): modelId is SupportedChatM
 export function resolveChatModel(modelId: string): ResolvedModel {
     const model = findSupportedChatModel(modelId);
     if (!model) {
-      throw new Error(`Unsupported model: ${modelId}`);
+        throw new Error(`Unsupported model: ${modelId}`);
     }
 
     return resolveSupportedChatModel(model);
