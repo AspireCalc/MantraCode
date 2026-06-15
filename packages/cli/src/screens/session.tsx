@@ -119,10 +119,15 @@ export function Session() {
     const navigate = useNavigate();
     const toast = useToast();
 
+    const reloadFlag = useMemo(() => {
+        return (location.state as { _reload?: number })?._reload ?? 0;
+    }, [location.state]);
+
     const prefetched = useMemo(() => {
+        if (reloadFlag) return null;
         const parsed = sessionLocationSchema.safeParse(location.state);
         return parsed.success ? parsed.data.session : null;
-    }, [location.state]);
+    }, [location.state, reloadFlag]);
 
     const [session, setSession] = useState<SessionData | null>(prefetched);
 
@@ -155,11 +160,11 @@ export function Session() {
         return () => {
             ignore = true;
         }
-    }, [id, prefetched, toast, navigate]);
+    }, [id, prefetched, reloadFlag, toast, navigate]);
 
     if (!session) {
         return <SessionShell onSubmit={() => { }} inputDisabled={true} loading />
     }
 
-    return <SessionChat key={session.id} session={session} />
+    return <SessionChat key={`${session.id}-${reloadFlag}`} session={session} />
 };

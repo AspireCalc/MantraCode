@@ -1,4 +1,5 @@
-import { ThemeDialogContent } from "../dialogs";
+import { SUPPORTED_CHAT_MODELS } from "@mantracode/shared";
+import { AgentsDialogContent, ModelsDialogContent, SessionDialogContent, ThemeDialogContent } from "../dialogs";
 import type { Command } from "./types";
 
 export const COMMANDS: Command[] = [
@@ -7,7 +8,15 @@ export const COMMANDS: Command[] = [
         description: "Start a new conversation",
         value: "/new",
         action: (ctx) => {
-            ctx.toast.show({ message: "Starting new conversation..." })
+            ctx.navigate("/");
+        },
+    },
+    {
+        name: "reload",
+        description: "Reload the session",
+        value: "/reload",
+        action: (ctx) => {
+            ctx.navigate(ctx.pathname, { state: { _reload: Date.now() } });
         },
     },
     {
@@ -17,7 +26,7 @@ export const COMMANDS: Command[] = [
         action: (ctx) => {
             ctx.dialog.open({
                 title: "Select Agent",
-                children: <text>Agent selection coming soon...</text>
+                children: <AgentsDialogContent currentMode={ctx.mode} onSelectMode={ctx.setMode} />
             })
         },
     },
@@ -26,9 +35,9 @@ export const COMMANDS: Command[] = [
         description: "Select AI model for generation",
         value: "/models",
         action: (ctx) => {
-             ctx.dialog.open({
-                title: "Select Modal",
-                children: <text>Model selection coming soon...</text>
+            ctx.dialog.open({
+                title: "Select Model",
+                children: <ModelsDialogContent models={SUPPORTED_CHAT_MODELS.map((model) => model.id)} onSelectModel={ctx.setModel} />
             })
         },
     },
@@ -37,7 +46,10 @@ export const COMMANDS: Command[] = [
         description: "Browse past sessions",
         value: "/sessions",
         action: (ctx) => {
-            ctx.toast.show({ message: "Loading sessions..." })
+            ctx.dialog.open({
+                title: "Session",
+                children: <SessionDialogContent />
+            })
         },
     },
     {

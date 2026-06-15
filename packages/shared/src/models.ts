@@ -12,9 +12,18 @@ type SupportedChatModelDefinition = {
 }
 
 export const SUPPORTED_CHAT_MODELS = [
+    // 🛠️ ADDED: Claude models routed directly through the "google-vertex" pipeline
+    // {
+    //     id: "claude-opus-4-8",
+    //     provider: "google-vertex",
+    //     pricing: {
+    //         inputUsdPerMillionTokens: 3.0,
+    //         outputUsdPerMillionTokens: 15.0,
+    //     },
+    // },
     // {
     //     id: "claude-sonnet-4-6",
-    //     provider: "anthropic",
+    //     provider: "google-vertex",
     //     pricing: {
     //         inputUsdPerMillionTokens: 3,
     //         outputUsdPerMillionTokens: 15,
@@ -166,7 +175,7 @@ export const SUPPORTED_CHAT_MODELS = [
     // },
     // {
     //     id: "grok-3-mini",
-    //     provider: "xai",a
+    //     provider: "xai",
     //     pricing: {
     //         inputUsdPerMillionTokens: 0.5,
     //         outputUsdPerMillionTokens: 2.5,
@@ -181,4 +190,5 @@ export function findSupportedChatModel(modelId: string) {
     return SUPPORTED_CHAT_MODELS.find((model) => model.id === modelId);
 }
 
+// export const DEFAULT_CHAT_MODEL_ID: SupportedChatModelId = "claude-opus-4-8";
 export const DEFAULT_CHAT_MODEL_ID: SupportedChatModelId = "gemini-3.5-flash";
