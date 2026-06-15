@@ -3,7 +3,9 @@ export type ModelPricing = {
     outputUsdPerMillionTokens: number;
 };
 
+
 export type SupportedProvider = "anthropic" | "openai" | "google" | "google-vertex" | "xai";
+
 
 type SupportedChatModelDefinition = {
     id: string;
@@ -11,94 +13,22 @@ type SupportedChatModelDefinition = {
     pricing: ModelPricing;
 }
 
+
 export const SUPPORTED_CHAT_MODELS = [
-    // 🛠️ ADDED: Claude models routed directly through the "google-vertex" pipeline
-    // {
-    //     id: "claude-opus-4-8",
-    //     provider: "google-vertex",
-    //     pricing: {
-    //         inputUsdPerMillionTokens: 3.0,
-    //         outputUsdPerMillionTokens: 15.0,
-    //     },
-    // },
-    // {
-    //     id: "claude-sonnet-4-6",
-    //     provider: "google-vertex",
-    //     pricing: {
-    //         inputUsdPerMillionTokens: 3,
-    //         outputUsdPerMillionTokens: 15,
-    //     },
-    // },
-    // {
-    //     id: "claude-haiku-4-5",
-    //     provider: "anthropic",
-    //     pricing: {
-    //         inputUsdPerMillionTokens: 1,
-    //         outputUsdPerMillionTokens: 5,
-    //     },
-    // },
-    // {
-    //     id: "claude-opus-4-6",
-    //     provider: "anthropic",
-    //     pricing: {
-    //         inputUsdPerMillionTokens: 5,
-    //         outputUsdPerMillionTokens: 25,
-    //     },
-    // },
-    // {
-    //     id: "gpt-5.4",
-    //     provider: "openai",
-    //     pricing: {
-    //         inputUsdPerMillionTokens: 2.5,
-    //         outputUsdPerMillionTokens: 15,
-    //     },
-    // },
-    // {
-    //     id: "gpt-5.4-mini",
-    //     provider: "openai",
-    //     pricing: {
-    //         inputUsdPerMillionTokens: 0.75,
-    //         outputUsdPerMillionTokens: 4.5,
-    //     },
-    // },
-    // {
-    //     id: "gpt-5.4-nano",
-    //     provider: "openai",
-    //     pricing: {
-    //         inputUsdPerMillionTokens: 0.2,
-    //         outputUsdPerMillionTokens: 1.25,
-    //     },
-    // },
+    {
+        id: "gemini-3.1-pro-preview",
+        provider: "google-vertex",
+        pricing: {
+            inputUsdPerMillionTokens: 2.0,
+            outputUsdPerMillionTokens: 12.0,
+        },
+    },
     {
         id: "gemini-3.5-flash",
         provider: "google-vertex",
         pricing: {
             inputUsdPerMillionTokens: 1.5,
-            outputUsdPerMillionTokens: 9,
-        },
-    },
-    {
-        id: "gemini-3-pro-preview",
-        provider: "google-vertex",
-        pricing: {
-            inputUsdPerMillionTokens: 2,
-            outputUsdPerMillionTokens: 12,
-        },
-    },
-    {
-        id: "gemini-3.1-pro-preview",
-        provider: "google-vertex",
-        pricing: {
-            inputUsdPerMillionTokens: 2,
-            outputUsdPerMillionTokens: 12,
-        },
-    },
-    {
-        id: "gemini-3-flash-preview",
-        provider: "google-vertex",
-        pricing: {
-            inputUsdPerMillionTokens: 0.5,
-            outputUsdPerMillionTokens: 3,
+            outputUsdPerMillionTokens: 9.0,
         },
     },
     {
@@ -114,7 +44,7 @@ export const SUPPORTED_CHAT_MODELS = [
         provider: "google-vertex",
         pricing: {
             inputUsdPerMillionTokens: 1.25,
-            outputUsdPerMillionTokens: 10,
+            outputUsdPerMillionTokens: 10.0,
         },
     },
     {
@@ -133,62 +63,16 @@ export const SUPPORTED_CHAT_MODELS = [
             outputUsdPerMillionTokens: 0.4,
         },
     },
-    {
-        id: "gemini-2.0-flash",
-        provider: "google-vertex",
-        pricing: {
-            inputUsdPerMillionTokens: 0.1,
-            outputUsdPerMillionTokens: 0.4,
-        },
-    },
-    // {
-    //     id: "gemini-2.5-pro",
-    //     provider: "google",
-    //     pricing: {
-    //         inputUsdPerMillionTokens: 1.25,
-    //         outputUsdPerMillionTokens: 5,
-    //     },
-    // },
-    // {
-    //     id: "gemini-2.5-flash",
-    //     provider: "google",
-    //     pricing: {
-    //         inputUsdPerMillionTokens: 0.15,
-    //         outputUsdPerMillionTokens: 0.6,
-    //     },
-    // },
-    // {
-    //     id: "gemini-2.0-flash",
-    //     provider: "google",
-    //     pricing: {
-    //         inputUsdPerMillionTokens: 0.1,
-    //         outputUsdPerMillionTokens: 0.4,
-    //     },
-    // },
-    // {
-    //     id: "grok-3",
-    //     provider: "xai",
-    //     pricing: {
-    //         inputUsdPerMillionTokens: 3,
-    //         outputUsdPerMillionTokens: 15,
-    //     },
-    // },
-    // {
-    //     id: "grok-3-mini",
-    //     provider: "xai",
-    //     pricing: {
-    //         inputUsdPerMillionTokens: 0.5,
-    //         outputUsdPerMillionTokens: 2.5,
-    //     },
-    // },
 ] as const satisfies readonly SupportedChatModelDefinition[];
+
 
 export type SupportedChatModel = (typeof SUPPORTED_CHAT_MODELS)[number];
 export type SupportedChatModelId = SupportedChatModel["id"];
+
 
 export function findSupportedChatModel(modelId: string) {
     return SUPPORTED_CHAT_MODELS.find((model) => model.id === modelId);
 }
 
-// export const DEFAULT_CHAT_MODEL_ID: SupportedChatModelId = "claude-opus-4-8";
+
 export const DEFAULT_CHAT_MODEL_ID: SupportedChatModelId = "gemini-3.5-flash";
