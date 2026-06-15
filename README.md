@@ -108,7 +108,7 @@ bun run dev:cli
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://...` |
-| `APP_URL` | Server URL for the CLI client | `http://localhost:3000` |
+| `API_URL` | Server URL for the CLI client | `http://localhost:3000` |
 | `ANTHROPIC_API_KEY` | Anthropic API Key | — |
 | `OPENAI_API_KEY` | OpenAI API Key | — |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Google generative AI API key | — |

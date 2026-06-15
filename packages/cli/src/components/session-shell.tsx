@@ -1,7 +1,8 @@
 import type { ReactNode } from "react"
+import { MacOSScrollAccel, TextAttributes } from "@opentui/core";
 import { InputBar } from "./input-bar";
-import { TextAttributes } from "@opentui/core";
 import { Spinner } from "./spinner";
+import { usePromptConfig } from "../providers/prompt-config";
 
 type Props = {
     children?: ReactNode;
@@ -11,7 +12,11 @@ type Props = {
     interruptible?: boolean;
 };
 
+const scrollAccel = new MacOSScrollAccel();
+
 export function SessionShell({ children, onSubmit, inputDisabled = false, loading = false, interruptible = false }: Props) {
+
+    const { mode } = usePromptConfig();
 
     return (
         <box
@@ -23,7 +28,7 @@ export function SessionShell({ children, onSubmit, inputDisabled = false, loadin
             paddingX={2}
             gap={1}
         >
-            <scrollbox flexGrow={1} width={"100%"} stickyScroll stickyStart="bottom">
+            <scrollbox flexGrow={1} width={"100%"} stickyScroll stickyStart="bottom" scrollAcceleration={scrollAccel}>
                 <box gap={1}>{children}</box>
             </scrollbox>
             <box flexShrink={0}>
@@ -41,15 +46,10 @@ export function SessionShell({ children, onSubmit, inputDisabled = false, loadin
                 <box flexDirection="row" alignItems="center" gap={2}>
                     {loading ? (
                         <>
-                            <Spinner />
+                            <Spinner mode={mode} />
                             {interruptible ? <text>esc to interrupt</text> : null}
                         </>
                     ) : null}
-                </box>
-
-                <box flexDirection="row" gap={1}>
-                    <text selectable={false} attributes={TextAttributes.BOLD}>shift + enter</text>
-                    <text selectable={false} attributes={TextAttributes.DIM}>submit</text>
                 </box>
 
                 <box flexDirection="row" gap={1} flexShrink={0} marginLeft={"auto"}>

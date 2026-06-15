@@ -15,7 +15,7 @@ type UseCommandMenuReturn = {
     setSelectedIndex: (index: number) => void
 };
 
-export function useCommandMenu(): UseCommandMenuReturn {
+export function useCommandMenu(pathname?: string): UseCommandMenuReturn {
     const [textValue, setTextValue] = useState("");
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [showCommandMenu, setShowCommandMenu] = useState(false);
@@ -23,7 +23,7 @@ export function useCommandMenu(): UseCommandMenuReturn {
     const { push, pop, isTopLayer } = useKeyboardLayer();
 
     const commandQuery = showCommandMenu && textValue.startsWith("/") ? textValue.slice(1) : "";
-    const filteredCommands = useMemo(() => getFilteredCommands(commandQuery), [commandQuery]);
+    const filteredCommands = useMemo(() => getFilteredCommands(commandQuery, pathname), [commandQuery, pathname]);
 
     const closeCommand = () => {
         setShowCommandMenu(false);

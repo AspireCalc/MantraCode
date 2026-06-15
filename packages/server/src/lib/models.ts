@@ -1,7 +1,11 @@
 // import { anthropic } from "@ai-sdk/anthropic";
 // import { openai } from "@ai-sdk/openai";
 // import { google } from "@ai-sdk/google";
+
+// 1. Import both creators from their respective sub-modules
 import { createVertex } from "@ai-sdk/google-vertex";
+import { createVertexAnthropic } from "@ai-sdk/google-vertex/anthropic";
+
 // import { xai } from "@ai-sdk/xai";
 
 import { findSupportedChatModel } from "@mantracode/shared";
@@ -9,9 +13,16 @@ import type { SupportedChatModel, SupportedChatModelId, SupportedProvider } from
 
 import type { LanguageModel } from "ai";
 
+// 2. Initialize a native provider instance for Gemini models
 const vertexProvider = createVertex({
     project: process.env.GOOGLE_VERTEX_PROJECT,
     location: process.env.GOOGLE_VERTEX_LOCATION ?? "global",
+});
+
+// 3. Initialize a partner provider instance for Claude models
+const vertexAnthropicProvider = createVertexAnthropic({
+    project: process.env.GOOGLE_VERTEX_PROJECT,
+    location: process.env.GOOGLE_VERTEX_LOCATION ?? "us-east5", // Claude has heavy region support in us-east5
 });
 
 // type AnthropicModelId = Extract<SupportedChatModel, { provider: "anthropic" }>["id"];
@@ -55,8 +66,14 @@ function assertUnsupportedProvider(provider: never): never {
 // }
 
 function resolveGoogleVertexModel(modelId: GoogleVertexModelId): ResolvedModel {
+    // 4. Use the correct provider instance depending on the chosen model ID
+    // vertexAnthropicProvider handles Claude, vertexProvider handles Gemini
+    const modelInstance = modelId.toLowerCase().includes("claude")
+        ? vertexAnthropicProvider(modelId)
+        : vertexProvider.languageModel(modelId);
+
     return {
-        model: vertexProvider.languageModel(modelId),
+        model: modelInstance,
         provider: "google-vertex",
         modelId,
     };

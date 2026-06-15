@@ -25,6 +25,7 @@ type StreamState = {
     content: string;
     model: string;
     mode: Mode;
+    done?: boolean;
 };
 
 const activeResumeSessionIds = new Set<string>();
@@ -129,6 +130,8 @@ async function streamAIResponse(
             },
         });
 
+        streamState.done = true;
+
         const doneEvent: ChatStreamEvent = {
             type: "done",
             messageId: assistantMessage.id,
@@ -153,6 +156,8 @@ async function streamAIResponse(
                 mode,
             }
         });
+
+        streamState.done = true;
 
         const errorEvent: ChatStreamEvent = { type: "error", message };
         await stream.writeSSE({ event: "error", data: JSON.stringify(errorEvent) });
@@ -310,16 +315,18 @@ const app = new Hono()
         if (streamState) {
             streamState.controller.abort();
 
-            await db.message.create({
-                data: {
-                    sessionId,
-                    role: "ASSISTANT",
-                    status: MessageStatus.INTERRUPTED,
-                    model: streamState.model,
-                    content: interruptedContent ?? streamState.content,
-                    mode: streamState.mode,
-                },
-            });
+            if (!streamState.done) {
+                await db.message.create({
+                    data: {
+                        sessionId,
+                        role: "ASSISTANT",
+                        status: MessageStatus.INTERRUPTED,
+                        model: streamState.model,
+                        content: interruptedContent ?? streamState.content,
+                        mode: streamState.mode,
+                    },
+                });
+            }
 
             activeStreamControllers.delete(sessionId);
         }

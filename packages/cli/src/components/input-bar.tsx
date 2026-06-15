@@ -1,6 +1,6 @@
 import { useRef, useCallback, useEffect } from "react";
-import type { TextareaRenderable } from "@opentui/core";
-import { useRenderer } from "@opentui/react";
+import { TextAttributes, type TextareaRenderable } from "@opentui/core";
+import { useRenderer, useKeyboard } from "@opentui/react";
 import type { KeyBinding } from "@opentui/core";
 import { EmptyBorder } from "./border";
 import { StatusBar } from "./status-bar";
@@ -11,6 +11,9 @@ import { useToast } from "../providers/toast";
 import { useKeyboardLayer } from "../providers/keyboard-layer";
 import { useDialog } from "../providers/dialog";
 import { useTheme } from "../providers/theme";
+import { useNavigate, useLocation } from "react-router";
+import { usePromptConfig } from "../providers/prompt-config";
+import { Mode } from "@mantracode/database/enums";
 
 type Props = {
     onSubmit: (text: string) => void;
@@ -18,12 +21,10 @@ type Props = {
 };
 
 export const TEXTAREA_KEY_BINDINGS: KeyBinding[] = [
-    // Define the specific modifiers first to ensure they get caught
-    { name: "return", shift: true, action: "submit" },
-    { name: "enter", shift: true, action: "submit" },
-    // Explicitly set shift: false for standard enters to create newlines
-    { name: "return", shift: false, action: "newline" },
-    { name: "enter", shift: false, action: "newline" },
+    { name: "return", shift: false, action: "submit" },
+    { name: "enter", shift: false, action: "submit" },
+    { name: "return", meta: true, action: "newline" },
+    { name: "enter", meta: true, action: "newline" },
 ]
 
 export function InputBar({ onSubmit, disabled = false }: Props) {
@@ -34,6 +35,9 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
     const dialog = useDialog();
     const { isTopLayer, setResponder } = useKeyboardLayer();
     const { colors } = useTheme();
+    const navigate = useNavigate();
+    const { pathname } = useLocation();
+    const { mode, toggleMode, setMode, setModel } = usePromptConfig();
 
     const {
         showCommandMenu,
@@ -43,7 +47,7 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
         handleContentChange,
         resolveCommand,
         setSelectedIndex,
-    } = useCommandMenu();
+    } = useCommandMenu(pathname);
 
     const handleTextareaContentChange = useCallback(() => {
         const textarea = textareaRef.current;
@@ -76,11 +80,16 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
                 exit: () => renderer.destroy(),
                 toast,
                 dialog,
+                navigate,
+                pathname,
+                mode,
+                setMode,
+                setModel,
             })
         } else {
             textarea.insertText(command.value + " ");
         }
-    }, [renderer, toast, dialog]);
+    }, [renderer, toast, dialog, navigate, pathname, mode, setMode, setModel]);
 
     const handleCommandExecute = useCallback((index: number) => {
         const command = resolveCommand(index);
@@ -108,14 +117,23 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
         handleSubmit();
     }
 
+    useKeyboard((key) => {
+        if (disabled) return;
+        if (!isTopLayer("base")) return;
+        if (key.name === "tab") {
+            key.preventDefault();
+            toggleMode();
+        }
+    });
+
     useEffect(() => {
         setResponder("base", () => {
             if (disabled) return false;
 
             const textarea = textareaRef.current;
             if (textarea && textarea.plainText.length > 0) {
-              textarea.setText("");
-              return true;
+                textarea.setText("");
+                return true;
             };
             return false;
         });
@@ -127,7 +145,7 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
         <box width="100%" alignItems="center">
             <box
                 border={["left"]}
-                borderColor={colors.primary}
+                borderColor={mode === Mode.BUILD ? colors.primary : colors.planMode}
                 customBorderChars={{
                     ...EmptyBorder,
                     vertical: "┃",
@@ -159,6 +177,7 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
                                 scrollRef={scrollRef}
                                 onSelect={setSelectedIndex}
                                 onExecute={handleCommandExecute}
+                                pathname={pathname}
                             />
                         </box>
                     )}
@@ -170,7 +189,28 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
                         onContentChange={handleTextareaContentChange}
                         placeholder={`Ask anything... "Fix a bug in the database"`}
                     />
-                    <StatusBar />
+                    <box width={"100%"} flexDirection="row">
+                        <StatusBar />
+                    </box>
+                    <box
+                        position="absolute"
+                        bottom={0}
+                        right={0}
+                        paddingRight={2}
+                        paddingBottom={1}
+                        flexDirection="row"
+                        flexWrap="wrap"
+                        gap={2}
+                    >
+                        <box flexDirection="row" gap={1}>
+                            <text selectable={false} attributes={TextAttributes.BOLD} fg={colors.primary}>enter</text>
+                            <text selectable={false} attributes={TextAttributes.DIM}>submit</text>
+                        </box>
+                        <box flexDirection="row" gap={1}>
+                            <text selectable={false} attributes={TextAttributes.BOLD} fg={colors.primary}>shift + enter</text>
+                            <text selectable={false} attributes={TextAttributes.DIM}>new line</text>
+                        </box>
+                    </box>
                 </box>
             </box>
         </box>

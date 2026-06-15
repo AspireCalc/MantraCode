@@ -1,10 +1,17 @@
+import type { Mode } from "@mantracode/database/enums";
 import type { DialogContextValue } from "../../providers/dialog";
 import type { ToastContextValue } from "../../providers/toast";
+import type { SupportedChatModelId } from "@mantracode/shared";
 
 export type CommandContext = {
     exit: () => void;
     toast: ToastContextValue;
     dialog: DialogContextValue;
+    navigate: (path: string, options?: { state?: unknown; replace?: boolean }) => void;
+    pathname: string;
+    mode: Mode;
+    setMode: (mode: Mode) => void;
+    setModel: (model: SupportedChatModelId) => void;
 };
 
 export type Command = {

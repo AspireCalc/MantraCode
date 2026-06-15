@@ -1,4 +1,4 @@
 import { hc } from "hono/client";
 import type { AppType } from "@mantracode/server";
 
-export const apiClient = hc<AppType>(process.env.APP_URL ?? "http://localhost:3000");
+export const apiClient = hc<AppType>(process.env.API_URL ?? "http://localhost:3000");
