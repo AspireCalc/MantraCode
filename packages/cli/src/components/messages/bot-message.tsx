@@ -106,73 +106,76 @@ export function BotMessage({ parts, model, mode, duration, streaming = false, di
 
     return (
         <box width={"100%"} alignItems="center">
-            {groupConsecutiveParts(visibleParts).map((group) => {
+            {(() => {
                 let reasoningIdx = -1;
                 let tcIdx = -1;
-                return (
-                <box key={group.key} paddingY={1} width={"100%"}>
-                    {group.parts.map((part, j) => {
-                        if (part.type === "reasoning") {
-                            reasoningIdx++;
-                            const textLen = reasoningPartLengths?.[reasoningIdx] ?? part.text.length;
-                            const text = part.text.slice(0, textLen);
-                            return (
-                                <box
-                                    key={`reasoning-${j}`}
-                                    border={["left"]}
-                                    borderColor={colors.thinkingBorder}
-                                    customBorderChars={{
-                                        ...EmptyBorder,
-                                        vertical: "│",
-                                    }}
-                                    width={"100%"}
-                                    paddingX={2}
-                                >
-                                    <text attributes={TextAttributes.ITALIC | TextAttributes.DIM}>
-                                        <em fg={colors.thinking}>Thinking:&nbsp;</em> {text}
-                                    </text>
-                                </box>
-                            )
-                        }
+                return groupConsecutiveParts(visibleParts).map((group) => {
+                    return (
+                        <box key={group.key} paddingY={1} width={"100%"}>
+                            {group.parts.map((part, j) => {
+                                if (part.type === "reasoning") {
+                                    reasoningIdx++;
+                                    const textLen = reasoningPartLengths?.[reasoningIdx] ?? part.text.length;
+                                    const text = part.text.slice(0, textLen);
+                                    return (
+                                        <box
+                                            key={`reasoning-${j}`}
+                                            border={["left"]}
+                                            borderColor={colors.thinkingBorder}
+                                            customBorderChars={{
+                                                ...EmptyBorder,
+                                                vertical: "│",
+                                            }}
+                                            width={"100%"}
+                                            paddingX={2}
+                                        >
+                                            <text attributes={TextAttributes.ITALIC | TextAttributes.DIM}>
+                                                <em fg={colors.thinking}>Thinking:&nbsp;</em> {text}
+                                            </text>
+                                        </box>
+                                    )
+                                }
 
-                        if (part.type === "tool-call") {
-                            tcIdx++;
-                            const formattedText = formatToolName(part.name) + ": " + formatToolArgs(part);
-                            const tcLen = toolCallPartLengths?.[tcIdx] ?? formattedText.length;
-                            const tcText = formattedText.slice(0, tcLen);
-                            const colonIdx = formattedText.indexOf(": ");
-                            const nameShown = tcLen > colonIdx + 2 ? colonIdx + 2 : tcLen;
-                            return (
-                                <box
-                                    key={part.id}
-                                    border={["left"]}
-                                    borderColor={colors.thinkingBorder}
-                                    customBorderChars={{
-                                        ...EmptyBorder,
-                                        vertical: "│",
-                                    }}
-                                    width={"100%"}
-                                    paddingX={2}
-                                >
-                                    <text attributes={TextAttributes.DIM}>
-                                        <em fg={colors.info}>{formattedText.slice(0, nameShown)}</em>{tcText.slice(nameShown)}{part.status === "calling" ? " …" : ""}
-                                    </text>
-                                </box>
-                            )
-                        }
+                                if (part.type === "tool-call") {
+                                    tcIdx++;
+                                    const formattedText = formatToolName(part.name) + ": " + formatToolArgs(part);
+                                    const tcLen = toolCallPartLengths?.[tcIdx] ?? formattedText.length;
+                                    const tcText = formattedText.slice(0, tcLen);
+                                    const colonIdx = formattedText.indexOf(": ");
+                                    const nameShown = tcLen > colonIdx + 2 ? colonIdx + 2 : tcLen;
+                                    return (
+                                        <box
+                                            key={part.id}
+                                            border={["left"]}
+                                            borderColor={colors.thinkingBorder}
+                                            customBorderChars={{
+                                                ...EmptyBorder,
+                                                vertical: "│",
+                                            }}
+                                            width={"100%"}
+                                            paddingX={2}
+                                        >
+                                            <text attributes={TextAttributes.DIM}>
+                                                <em fg={colors.info}>{formattedText.slice(0, nameShown)}</em>{tcText.slice(nameShown)}{part.status === "calling" ? " …" : ""}
+                                            </text>
+                                        </box>
+                                    )
+                                }
 
-                        if (part.type === "text") {
-                            return (
-                                <box key={`text-${j}`} paddingX={3} width={"100%"}>
-                                    <text>{part.text}</text>
-                                </box>
-                            );
-                        }
+                                if (part.type === "text") {
+                                    return (
+                                        <box key={`text-${j}`} paddingX={3} width={"100%"}>
+                                            <text>{part.text}</text>
+                                        </box>
+                                    );
+                                }
 
-                        return null;
-                    })}
-                </box>
-            )})}
+                                return null;
+                            })}
+                        </box>
+                    )
+                });
+            })()}
 
             {hasDisplayText && (
                 <box paddingX={3} paddingY={1} width={"100%"}>
