@@ -10,7 +10,19 @@ import { chatStreamEventSchema, type SupportedChatModelId } from "@mantracode/sh
 const REVEAL_CHARS_PER_TICK = 4;
 const REVEAL_TICK_MS = 16;
 
-export type ClientMessagePart = { type: "text", text: string };
+export type ClientToolCallPart = {
+    type: "tool-call",
+    id: string;
+    name: string;
+    args: Record<string, unknown>;
+    result?: string;
+    status: "calling" | "done";
+};
+
+export type ClientMessagePart =
+    | { type: "reasoning", text: string }
+    | ClientToolCallPart
+    | { type: "text", text: string }
 
 export type Message =
     | {
@@ -41,6 +53,10 @@ type StreamingState =
         parts: ClientMessagePart[];
         fullText: string;
         displayText: string;
+        reasoningText: string;
+        displayedReasoningText: string;
+        toolCallText: string;
+        displayedToolCallText: string;
         mode: Mode;
         model: SupportedChatModelId;
     };
@@ -76,6 +92,10 @@ export function useChat(
     const activeStreamRef = useRef<ActiveStream | null>(null);
     const fullTextRef = useRef("");
     const displayedTextRef = useRef("");
+    const reasoningTextRef = useRef("");
+    const displayedReasoningRef = useRef("");
+    const toolCallTextRef = useRef("");
+    const displayedToolCallRef = useRef("");
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const streamDoneRef = useRef(false);
     const pendingMessageRef = useRef<{
@@ -109,6 +129,8 @@ export function useChat(
                 ...prev,
                 parts: snapshot,
                 fullText: fullTextRef.current,
+                reasoningText: reasoningTextRef.current,
+                toolCallText: toolCallTextRef.current,
             };
         });
     }, [isActiveRequest]);
@@ -120,16 +142,25 @@ export function useChat(
         activeStream.interruptedCaptured = true;
 
         const parts = partsSnapshot ?? activeStream.parts;
-        const capturedText = parts
-            .filter((p) => p.type === "text")
-            .map((p) => p.text)
-            .join("");
-        if (!capturedText) return;
+        if (parts.length === 0) return;
 
-        const content = displayedTextSnapshot || capturedText;
-        const messageParts = displayedTextSnapshot
-            ? [{ type: "text" as const, text: displayedTextSnapshot }]
-            : [...parts];
+        let messageParts: ClientMessagePart[];
+        let content: string;
+
+        if (displayedTextSnapshot) {
+            const nonTextParts = parts.filter((p) => p.type !== "text");
+            messageParts = [
+                ...nonTextParts,
+                { type: "text", text: displayedTextSnapshot },
+            ];
+            content = displayedTextSnapshot;
+        } else {
+            messageParts = [...parts];
+            content = parts
+                .filter((p) => p.type === "text")
+                .map((p) => p.text)
+                .join("");
+        }
 
         updateMessages((prev) => [
             ...prev,
@@ -150,43 +181,74 @@ export function useChat(
 
         intervalRef.current = setInterval(() => {
             const full = fullTextRef.current;
+            const reasoningFull = reasoningTextRef.current;
+            const toolCallFull = toolCallTextRef.current;
 
             setStreaming((prev) => {
                 if (prev.status !== "streaming") return prev;
-                if (prev.displayText.length >= full.length) {
+
+                const bothDone = prev.displayText.length >= full.length
+                    && prev.displayedReasoningText.length >= reasoningFull.length
+                    && prev.displayedToolCallText.length >= toolCallFull.length;
+
+                if (bothDone) {
                     if (streamDoneRef.current) {
                         return { status: "idle" };
                     }
                     return prev;
                 }
-                const nextLen = Math.min(
+
+                const nextTextLen = Math.min(
                     prev.displayText.length + REVEAL_CHARS_PER_TICK,
                     full.length,
                 );
-                const next = full.slice(0, nextLen);
-                displayedTextRef.current = next;
+                const nextText = full.slice(0, nextTextLen);
+                displayedTextRef.current = nextText;
+
+                const nextReasonLen = Math.min(
+                    prev.displayedReasoningText.length + REVEAL_CHARS_PER_TICK,
+                    reasoningFull.length,
+                );
+                const nextReason = reasoningFull.slice(0, nextReasonLen);
+                displayedReasoningRef.current = nextReason;
+
+                const nextToolCallLen = Math.min(
+                    prev.displayedToolCallText.length + REVEAL_CHARS_PER_TICK,
+                    toolCallFull.length,
+                );
+                const nextToolCall = toolCallFull.slice(0, nextToolCallLen);
+                displayedToolCallRef.current = nextToolCall;
+
                 return {
                     ...prev,
-                    displayText: next,
+                    displayText: nextText,
+                    displayedReasoningText: nextReason,
+                    displayedToolCallText: nextToolCall,
                 };
             });
 
-            if (streamDoneRef.current && displayedTextRef.current.length >= fullTextRef.current.length) {
+            if (streamDoneRef.current
+                && displayedTextRef.current.length >= fullTextRef.current.length
+                && displayedReasoningRef.current.length >= reasoningTextRef.current.length
+                && displayedToolCallRef.current.length >= toolCallTextRef.current.length) {
                 const pending = pendingMessageRef.current;
                 if (pending) {
                     pendingMessageRef.current = null;
-                    updateMessages((prev) => [
-                        ...prev,
-                        {
-                            id: pending.id,
-                            role: "assistant",
-                            content: pending.fullText,
-                            mode: pending.mode,
-                            model: pending.model,
-                            duration: prettyMs(pending.durationMs),
-                            parts: pending.parts,
-                        },
-                    ]);
+                    updateMessages((prev) => {
+                        if (prev.some((m) => m.id === pending.id)) return prev;
+                        return [
+                            ...prev,
+                            {
+                                id: pending.id,
+                                role: "assistant",
+                                content: pending.fullText,
+                                mode: pending.mode,
+                                model: pending.model,
+                                duration: prettyMs(pending.durationMs),
+                                parts: pending.parts,
+                            },
+                        ];
+                    });
                 }
                 if (intervalRef.current) {
                     clearInterval(intervalRef.current);
@@ -259,6 +321,47 @@ export function useChat(
             }
 
             switch (event.type) {
+                case "reasoning-delta": {
+                    reasoningTextRef.current += event.text;
+                    const last = parts[parts.length - 1];
+                    if (last && last.type === "reasoning") {
+                        last.text += event.text;
+                    } else {
+                        parts.push({ type: "reasoning", text: event.text });
+                    }
+                    emitParts(activeStream.requestId, parts);
+                    break;
+                }
+                case "tool-call": {
+                    const tcArgs = event.args as Record<string, unknown>;
+                    const formattedArgs = Object.entries(tcArgs)
+                        .filter(([k]) => k !== "timeout")
+                        .map(([, v]) => String(v))
+                        .join(" ");
+                    const formattedName = event.toolName.replace(/([A-Z])/g, " $1").trim().replace(/^./, (c) => c.toUpperCase());
+                    const tcText = `${formattedName}: ${formattedArgs}`;
+
+                    toolCallTextRef.current += (toolCallTextRef.current ? "\n" : "") + tcText;
+
+                    parts.push({
+                        type: "tool-call",
+                        id: event.toolCallId,
+                        name: event.toolName,
+                        args: tcArgs,
+                        status: "calling",
+                    });
+                    emitParts(activeStream.requestId, parts);
+                    break;
+                }
+                case "tool-result": {
+                    const tc = parts.find((p): p is ClientToolCallPart => p.type === "tool-call" && p.id === event.toolCallId,);
+                    if (tc) {
+                        tc.result = event.result;
+                        tc.status = "done";
+                    }
+                    emitParts(activeStream.requestId, parts);
+                    break;
+                }
                 case "text-delta": {
                     const last = parts[parts.length - 1];
                     if (last && last.type === "text") {
@@ -330,12 +433,20 @@ export function useChat(
         pendingMessageRef.current = null;
         fullTextRef.current = "";
         displayedTextRef.current = "";
+        reasoningTextRef.current = "";
+        displayedReasoningRef.current = "";
+        toolCallTextRef.current = "";
+        displayedToolCallRef.current = "";
         activeStreamRef.current = activeStream;
         setStreaming({
             status: "streaming",
             parts: [],
             fullText: "",
             displayText: "",
+            reasoningText: "",
+            displayedReasoningText: "",
+            toolCallText: "",
+            displayedToolCallText: "",
             mode,
             model,
         });
@@ -372,18 +483,21 @@ export function useChat(
             const pending = pendingMessageRef.current;
             pendingMessageRef.current = null;
             if (pending) {
-                updateMessages((prev) => [
-                    ...prev,
-                    {
-                        id: pending.id,
-                        role: "assistant",
-                        content: pending.fullText,
-                        mode: pending.mode,
-                        model: pending.model,
-                        duration: prettyMs(pending.durationMs),
-                        parts: pending.parts,
-                    },
-                ]);
+                updateMessages((prev) => {
+                    if (prev.some((m) => m.id === pending.id)) return prev;
+                    return [
+                        ...prev,
+                        {
+                            id: pending.id,
+                            role: "assistant",
+                            content: pending.fullText,
+                            mode: pending.mode,
+                            model: pending.model,
+                            duration: prettyMs(pending.durationMs),
+                            parts: pending.parts,
+                        },
+                    ];
+                });
             }
             stopReveal();
             setStreaming({ status: "idle" });
@@ -398,12 +512,13 @@ export function useChat(
                 .map((p) => p.text)
                 .join("");
 
-            if (capturedText) {
-                apiClient.chat[":sessionId"].interrupt.$post({
-                    param: { sessionId },
-                    json: { content: displayedTextSnapshot || capturedText },
-                }).catch(() => {});
-            }
+            apiClient.chat[":sessionId"].interrupt.$post({
+                param: { sessionId },
+                json: {
+                    content: displayedTextSnapshot || capturedText,
+                    parts: partsSnapshot.length > 0 ? partsSnapshot as any : undefined,
+                },
+            }).catch(() => { });
 
             captureInterruptedMessage(activeStream, partsSnapshot, displayedTextSnapshot);
 

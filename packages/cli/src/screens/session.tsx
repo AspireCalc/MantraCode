@@ -1,19 +1,20 @@
 import z from "zod";
 import prettyMs from "pretty-ms";
-import { useToast } from "../providers/toast";
 import { useChat } from "../hooks/use-chat";
+import { useKeyboard } from "@opentui/react";
 import { apiClient } from "../lib/api-client";
+import { useToast } from "../providers/toast";
 import type { InferResponseType } from "hono";
 import { useEffect, useMemo, useState } from "react";
 import { getErrorMessage } from "../lib/https-errors";
-import { SessionShell } from "../components/session-shell";
-import { useLocation, useNavigate, useParams } from "react-router";
-import type { Message, ClientMessagePart } from "../hooks/use-chat";
-import { BotMessage, ErrorMessage, UserMessage } from "../components/messages";
-import { DEFAULT_CHAT_MODEL_ID, type SupportedChatModelId } from "@mantracode/shared";
 import { MessageStatus } from "@mantracode/database/enums";
-import { useKeyboard } from "@opentui/react";
+import { SessionShell } from "../components/session-shell";
+import { usePromptConfig } from "../providers/prompt-config";
 import { useKeyboardLayer } from "../providers/keyboard-layer";
+import { useLocation, useNavigate, useParams } from "react-router";
+import type { ClientMessagePart, Message } from "../hooks/use-chat";
+import { BotMessage, ErrorMessage, UserMessage } from "../components/messages";
+import { messagePartsSchema, type SupportedChatModelId } from "@mantracode/shared";
 
 type SessionData = InferResponseType<typeof apiClient.sessions[":id"]["$get"], 200>;
 
@@ -37,13 +38,20 @@ function mapDbMessages(dbMessages: SessionData["messages"]): Message[] {
             };
         }
 
+        const parsedParts = m.parts == null ? null : messagePartsSchema.safeParse(m.parts);
+        const parts: ClientMessagePart[] = parsedParts?.success
+            ? parsedParts.data.map((p) =>
+                p.type === "tool-call" ? { ...p, status: "done" as const } : p,
+            )
+            : (m.content ? [{ type: "text", text: m.content }] : []);
+
         return {
             id: m.id,
             role: "assistant",
             content: m.content,
             model: m.model as SupportedChatModelId,
             mode: m.mode,
-            parts: [{ type: "text", text: m.content }],
+            parts,
             ...(m.duration !== null ? { duration: prettyMs(m.duration * 1000) } : {}),
             interrupted: m.status === MessageStatus.INTERRUPTED,
         };
@@ -52,7 +60,7 @@ function mapDbMessages(dbMessages: SessionData["messages"]): Message[] {
 
 function ChatMessage({ msg }: { msg: Message }) {
     if (msg.role === "user") {
-        return <UserMessage message={msg.content} />
+        return <UserMessage message={msg.content} mode={msg.mode} />
     }
 
     if (msg.role === "error") {
@@ -70,9 +78,10 @@ function ChatMessage({ msg }: { msg: Message }) {
 };
 
 function SessionChat({ session }: { session: SessionData }) {
+    const { mode, model } = usePromptConfig();
+    const { isTopLayer } = useKeyboardLayer();
     const [initialMessages] = useState(() => mapDbMessages(session.messages));
     const { messages, streaming, submit, abort, interrupt } = useChat(session.id, initialMessages);
-    const { isTopLayer } = useKeyboardLayer();
 
     useEffect(() => {
         return () => { abort(); };
@@ -87,12 +96,12 @@ function SessionChat({ session }: { session: SessionData }) {
 
     return (
         <SessionShell
-            onSubmit={(text) => submit({ userText: text, mode: "BUILD", model: DEFAULT_CHAT_MODEL_ID })}
+            onSubmit={(text) => submit({ userText: text, mode, model })}
             loading={streaming.status === "streaming"}
             interruptible={streaming.status === "streaming"}
         >
             {[...messages, ...(streaming.status === "streaming" && streaming.parts.length > 0
-                ? [{ _key: "__streaming__" as const, parts: streaming.parts, model: streaming.model, mode: streaming.mode, displayText: streaming.displayText }]
+                ? [{ _key: "__streaming__" as const, parts: streaming.parts, model: streaming.model, mode: streaming.mode, displayText: streaming.displayText, displayedReasoningText: streaming.displayedReasoningText, displayedToolCallText: streaming.displayedToolCallText }]
                 : []
             )].map((item) => {
                 if ("_key" in item) {
@@ -103,6 +112,8 @@ function SessionChat({ session }: { session: SessionData }) {
                             model={item.model}
                             mode={item.mode}
                             displayText={item.displayText}
+                            displayedReasoningText={item.displayedReasoningText}
+                            displayedToolCallText={item.displayedToolCallText}
                             streaming
                         />
                     );

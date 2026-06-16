@@ -1,12 +1,16 @@
-import { Hono } from "hono";
-import { streamSSE } from "hono/streaming";
-import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { streamText as aiStreamText } from "ai";
+import { Hono } from "hono";
+import { createTools } from "../tools";
+import { streamSSE } from "hono/streaming";
+import { streamText as aiStreamText, stepCountIs } from "ai";
+import { zValidator } from "@hono/zod-validator";
 import { db } from "@mantracode/database/client";
+import type { Prisma } from "@mantracode/database";
+import { buildSystemPrompt } from "../system-prompt";
 import { Mode, MessageStatus } from "@mantracode/database/enums";
-import type { ChatStreamEvent } from "@mantracode/shared";
+import type { ChatStreamEvent, MessagePart } from "@mantracode/shared";
 import { isSupportedChatModel, resolveChatModel } from "../lib/models";
+import { toolCallArgsSchema, messagePartsSchema } from "@mantracode/shared";
 
 const submitSchema = z.object({
     content: z.string(),
@@ -70,6 +74,7 @@ function getResumableUserMessage(
 type StreamParams = {
     sessionId: string;
     model: string;
+    cwd: string | null;
     history: {
         role: "user" | "assistant";
         content: string;
@@ -83,24 +88,87 @@ async function streamAIResponse(
     stream: Parameters<Parameters<typeof streamSSE>[1]>[0],
     params: StreamParams,
 ) {
-    const { sessionId, model, history, mode, abortController, streamState } = params;
+    const { sessionId, model, cwd, history, mode, abortController, streamState } = params;
     const startTime = Date.now();
+    const parts: MessagePart[] = [];
     const resolvedModel = resolveChatModel(model);
+    const tools = cwd ? createTools(cwd, mode) : undefined;
 
     try {
         const result = aiStreamText({
-            model: resolvedModel.model,
+            tools,
             messages: history,
+            model: resolvedModel.model,
             abortSignal: abortController.signal,
+            system: buildSystemPrompt({ cwd, mode }),
+            stopWhen: tools ? stepCountIs(50) : undefined,
+            providerOptions: resolvedModel.providerOptions,
         });
 
         for await (const part of result.fullStream) {
             if (stream.aborted) break;
 
+            if (part.type === "reasoning-delta") {
+                const last = parts[parts.length - 1];
+                if (last && last.type === "reasoning") {
+                    last.text += part.text;
+                } else {
+                    parts.push({ type: "reasoning", text: part.text });
+                }
+
+                const event: ChatStreamEvent = { type: "reasoning-delta", text: part.text };
+                await stream.writeSSE({ event: "reasoning-delta", data: JSON.stringify(event) });
+            }
+
             if (part.type === "text-delta") {
+                const last = parts[parts.length - 1];
+                if (last && last.type === "text") {
+                    last.text += part.text;
+                } else {
+                    parts.push({ type: "text", text: part.text });
+                }
+
                 streamState.content += part.text;
                 const event: ChatStreamEvent = { type: "text-delta", text: part.text };
                 await stream.writeSSE({ event: "text-delta", data: JSON.stringify(event) });
+            }
+
+            if (part.type === "tool-call") {
+                const args = toolCallArgsSchema.parse(part.input);
+
+                parts.push({
+                    type: "tool-call",
+                    id: part.toolCallId,
+                    name: part.toolName,
+                    args,
+                });
+
+                const event: ChatStreamEvent = {
+                    type: "tool-call",
+                    toolCallId: part.toolCallId,
+                    toolName: part.toolName,
+                    args,
+                };
+
+                await stream.writeSSE({ event: "tool-call", data: JSON.stringify(event) });
+            }
+
+            if (part.type === "tool-result") {
+                const resultString = typeof part.output === "string" ? part.output : JSON.stringify(part.output);
+
+                const tcPart = parts.find((p): p is Extract<MessagePart, { type: "tool-call" }> => p.type === "tool-call" && p.id === part.toolCallId);
+
+                if (tcPart) {
+                    tcPart.result = resultString;
+                }
+
+                const event: ChatStreamEvent = {
+                    type: "tool-result",
+                    toolCallId: part.toolCallId,
+                    result: resultString,
+                };
+
+                await stream.writeSSE({ event: "tool-result", data: JSON.stringify(event) });
             }
 
             if (part.type === "error") {
@@ -118,11 +186,14 @@ async function streamAIResponse(
 
         const elapsedMs = Date.now() - startTime;
 
+        const validatedParts: Prisma.InputJsonValue | undefined = parts.length > 0 ? messagePartsSchema.parse(parts) : undefined;
+
         const assistantMessage = await db.message.create({
             data: {
                 sessionId,
                 role: "ASSISTANT",
                 status: MessageStatus.COMPLETE,
+                parts: validatedParts,
                 model,
                 content: streamState.content,
                 mode,
@@ -212,12 +283,13 @@ const app = new Hono()
 
                     try {
                         await streamAIResponse(stream, {
-                            sessionId,
-                            model: resumableMessage.model,
                             history,
-                            mode: resumableMessage.mode,
-                            abortController,
+                            sessionId,
                             streamState,
+                            abortController,
+                            cwd: session.cwd,
+                            mode: resumableMessage.mode,
+                            model: resumableMessage.model,
                         });
                     } finally {
                         activeResumeSessionIds.delete(sessionId);
@@ -289,12 +361,13 @@ const app = new Hono()
                 });
 
                 await streamAIResponse(stream, {
-                    sessionId,
-                    model: data.model,
                     history,
-                    mode: data.mode,
-                    abortController,
+                    sessionId,
                     streamState,
+                    abortController,
+                    mode: data.mode,
+                    cwd: session.cwd,
+                    model: data.model,
                 });
             },
             async (err, stream) => {
@@ -307,9 +380,10 @@ const app = new Hono()
     })
     .post("/:sessionId/interrupt", zValidator("json", z.object({
         content: z.string().optional(),
+        parts: messagePartsSchema.optional(),
     })), async (c) => {
         const sessionId = c.req.param("sessionId");
-        const { content: interruptedContent } = c.req.valid("json");
+        const { content: interruptedContent, parts: interruptedParts } = c.req.valid("json");
 
         const streamState = activeStreamControllers.get(sessionId);
         if (streamState) {
@@ -324,6 +398,7 @@ const app = new Hono()
                         model: streamState.model,
                         content: interruptedContent ?? streamState.content,
                         mode: streamState.mode,
+                        parts: interruptedParts as Prisma.InputJsonValue | undefined,
                     },
                 });
             }

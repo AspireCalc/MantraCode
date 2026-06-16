@@ -1,16 +1,17 @@
-import { useLocation, useNavigate } from "react-router";
-import { useEffect, useMemo, useRef } from "react";
-import { UserMessage } from "../components/messages";
-import { SessionShell } from "../components/session-shell";
 import { z } from "zod";
-import { DEFAULT_CHAT_MODEL_ID } from "@mantracode/shared";
-
 import { useToast } from "../providers/toast";
 import { apiClient } from "../lib/api-client";
+import { Mode } from "@mantracode/database/enums";
+import { useEffect, useMemo, useRef } from "react";
+import { UserMessage } from "../components/messages";
 import { getErrorMessage } from "../lib/https-errors";
+import { useLocation, useNavigate } from "react-router";
+import { SessionShell } from "../components/session-shell";
 
 const newSessionStateSchema = z.object({
     message: z.string(),
+    mode: z.enum(Mode),
+    model: z.string(),
 });
 
 export function NewSession() {
@@ -47,8 +48,8 @@ export function NewSession() {
                         initialMessage: {
                             role: "USER",
                             content: state.message,
-                            mode: "BUILD",
-                            model: DEFAULT_CHAT_MODEL_ID,
+                            mode: state.mode,
+                            model: state.model,
                         },
                     }
                 });
@@ -82,7 +83,7 @@ export function NewSession() {
 
     return (
         <SessionShell onSubmit={() => { }} inputDisabled loading>
-            <UserMessage message={state.message} />
+            <UserMessage message={state.message} mode={state.mode} />
         </SessionShell>
     )
 }
