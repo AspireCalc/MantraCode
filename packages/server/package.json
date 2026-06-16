@@ -16,6 +16,7 @@
     "@ai-sdk/google-vertex": "^4.0.145",
     "@ai-sdk/openai": "^3.0.70",
     "@ai-sdk/xai": "^3.0.94",
+    "@clerk/backend": "^3.7.1",
     "@hono/zod-validator": "^0.8.0",
     "@mantracode/database": "workspace:*",
     "@mantracode/shared": "workspace:*",

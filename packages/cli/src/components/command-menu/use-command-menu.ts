@@ -22,7 +22,7 @@ export function useCommandMenu(pathname?: string): UseCommandMenuReturn {
     const scrollRef = useRef<ScrollBoxRenderable>(null);
     const { push, pop, isTopLayer } = useKeyboardLayer();
 
-    const commandQuery = showCommandMenu && textValue.startsWith("/") ? textValue.slice(1) : "";
+    const commandQuery = showCommandMenu && textValue.startsWith("/") ? (textValue.slice(1).split(" ")[0] ?? "") : "";
     const filteredCommands = useMemo(() => getFilteredCommands(commandQuery, pathname), [commandQuery, pathname]);
 
     const closeCommand = () => {
@@ -39,8 +39,7 @@ export function useCommandMenu(pathname?: string): UseCommandMenuReturn {
             scrollbox.scrollTo(0);
         }
 
-        const prefix = text.startsWith("/") ? text.slice(1) : null;
-        if (prefix !== null && !prefix.includes(" ")) {
+        if (text.startsWith("/")) {
             setShowCommandMenu(true);
             push("command", () => {
                 closeCommand();

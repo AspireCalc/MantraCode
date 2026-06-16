@@ -11,6 +11,7 @@ import { Mode, MessageStatus } from "@mantracode/database/enums";
 import type { ChatStreamEvent, MessagePart } from "@mantracode/shared";
 import { isSupportedChatModel, resolveChatModel } from "../lib/models";
 import { toolCallArgsSchema, messagePartsSchema } from "@mantracode/shared";
+import type { AuthenticatedEnv } from "../middleware/require-auth";
 
 const submitSchema = z.object({
     content: z.string(),
@@ -94,6 +95,14 @@ async function streamAIResponse(
     const resolvedModel = resolveChatModel(model);
     const tools = cwd ? createTools(cwd, mode) : undefined;
 
+    function finalizeReasoningDuration(parts: MessagePart[], startTime: number) {
+        const elapsed = Date.now() - startTime;
+        const lastPart = parts[parts.length - 1];
+        if (lastPart?.type === "reasoning") {
+            lastPart.durationMs = elapsed;
+        }
+    }
+
     try {
         const result = aiStreamText({
             tools,
@@ -105,10 +114,15 @@ async function streamAIResponse(
             providerOptions: resolvedModel.providerOptions,
         });
 
+        let reasoningGroupStartTime: number | null = null;
+
         for await (const part of result.fullStream) {
             if (stream.aborted) break;
 
             if (part.type === "reasoning-delta") {
+                if (reasoningGroupStartTime === null) {
+                    reasoningGroupStartTime = Date.now();
+                }
                 const last = parts[parts.length - 1];
                 if (last && last.type === "reasoning") {
                     last.text += part.text;
@@ -121,6 +135,10 @@ async function streamAIResponse(
             }
 
             if (part.type === "text-delta") {
+                if (reasoningGroupStartTime !== null) {
+                    finalizeReasoningDuration(parts, reasoningGroupStartTime);
+                    reasoningGroupStartTime = null;
+                }
                 const last = parts[parts.length - 1];
                 if (last && last.type === "text") {
                     last.text += part.text;
@@ -134,6 +152,10 @@ async function streamAIResponse(
             }
 
             if (part.type === "tool-call") {
+                if (reasoningGroupStartTime !== null) {
+                    finalizeReasoningDuration(parts, reasoningGroupStartTime);
+                    reasoningGroupStartTime = null;
+                }
                 const args = toolCallArgsSchema.parse(part.input);
 
                 parts.push({
@@ -174,6 +196,11 @@ async function streamAIResponse(
             if (part.type === "error") {
                 throw part.error;
             }
+        }
+
+        if (reasoningGroupStartTime !== null) {
+            finalizeReasoningDuration(parts, reasoningGroupStartTime);
+            reasoningGroupStartTime = null;
         }
 
         if (!stream.aborted && !abortController.signal.aborted) {
@@ -235,12 +262,13 @@ async function streamAIResponse(
     }
 };
 
-const app = new Hono()
+const app = new Hono<AuthenticatedEnv>()
     .post("/:sessionId/resume", async (c) => {
         const sessionId = c.req.param("sessionId");
+        const userId = c.get("userId");
 
         const session = await db.session.findUnique({
-            where: { id: sessionId },
+            where: { id: sessionId, userId },
             include: { messages: { orderBy: { createdAt: "asc" } } },
         });
 
@@ -312,9 +340,10 @@ const app = new Hono()
     })
     .post("/:sessionId", submitValidator, async (c) => {
         const sessionId = c.req.param("sessionId");
+        const userId = c.get("userId");
 
         const session = await db.session.findUnique({
-            where: { id: sessionId },
+            where: { id: sessionId, userId },
             include: { messages: { orderBy: { createdAt: "asc" } } },
         });
 

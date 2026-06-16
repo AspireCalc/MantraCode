@@ -5,6 +5,7 @@ import { KeyboardLayerProvider } from "../providers/keyboard-layer";
 import { DialogProvider } from "../providers/dialog";
 import { ThemedRoot } from "./themed-root";
 import { PromptConfigProvider } from "../providers/prompt-config";
+import { SelectionClipboard } from "../components/selection-clipboard";
 
 export function RootLayout() {
     return (
@@ -18,6 +19,7 @@ export function RootLayout() {
                             </ThemedRoot>
                         </PromptConfigProvider>
                     </DialogProvider>
+                    <SelectionClipboard />
                 </KeyboardLayerProvider>
             </ToastProvider>
         </ThemeProvider>

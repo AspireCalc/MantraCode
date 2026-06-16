@@ -101,7 +101,7 @@ function SessionChat({ session }: { session: SessionData }) {
             interruptible={streaming.status === "streaming"}
         >
             {[...messages, ...(streaming.status === "streaming" && streaming.parts.length > 0
-                ? [{ _key: "__streaming__" as const, parts: streaming.parts, model: streaming.model, mode: streaming.mode, displayText: streaming.displayText, displayedReasoningText: streaming.displayedReasoningText, displayedToolCallText: streaming.displayedToolCallText }]
+                ? [{ _key: "__streaming__" as const, parts: streaming.parts, model: streaming.model, mode: streaming.mode, displayText: streaming.displayText, displayedReasoningText: streaming.displayedReasoningText, displayedToolCallText: streaming.displayedToolCallText, reasoningText: streaming.reasoningText, reasoningGroups: streaming.reasoningGroups, toolCallText: streaming.toolCallText }]
                 : []
             )].map((item) => {
                 if ("_key" in item) {
@@ -114,6 +114,9 @@ function SessionChat({ session }: { session: SessionData }) {
                             displayText={item.displayText}
                             displayedReasoningText={item.displayedReasoningText}
                             displayedToolCallText={item.displayedToolCallText}
+                            reasoningText={item.reasoningText}
+                            reasoningGroups={item.reasoningGroups}
+                            toolCallText={item.toolCallText}
                             streaming
                         />
                     );

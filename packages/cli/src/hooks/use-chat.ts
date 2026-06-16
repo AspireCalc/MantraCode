@@ -19,8 +19,13 @@ export type ClientToolCallPart = {
     status: "calling" | "done";
 };
 
+export type ReasoningGroupState = {
+    startTime: number;
+    durationMs: number | null;
+};
+
 export type ClientMessagePart =
-    | { type: "reasoning", text: string }
+    | { type: "reasoning", text: string, durationMs?: number }
     | ClientToolCallPart
     | { type: "text", text: string }
 
@@ -55,6 +60,7 @@ type StreamingState =
         displayText: string;
         reasoningText: string;
         displayedReasoningText: string;
+        reasoningGroups: ReasoningGroupState[];
         toolCallText: string;
         displayedToolCallText: string;
         mode: Mode;
@@ -94,6 +100,7 @@ export function useChat(
     const displayedTextRef = useRef("");
     const reasoningTextRef = useRef("");
     const displayedReasoningRef = useRef("");
+    const reasoningGroupsRef = useRef<ReasoningGroupState[]>([]);
     const toolCallTextRef = useRef("");
     const displayedToolCallRef = useRef("");
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -131,6 +138,7 @@ export function useChat(
                 fullText: fullTextRef.current,
                 reasoningText: reasoningTextRef.current,
                 toolCallText: toolCallTextRef.current,
+                reasoningGroups: [...reasoningGroupsRef.current],
             };
         });
     }, [isActiveRequest]);
@@ -323,6 +331,11 @@ export function useChat(
             switch (event.type) {
                 case "reasoning-delta": {
                     reasoningTextRef.current += event.text;
+                    const lastPart = parts[parts.length - 1];
+                    const isNewReasoningGroup = lastPart?.type !== "reasoning";
+                    if (isNewReasoningGroup) {
+                        reasoningGroupsRef.current.push({ startTime: Date.now(), durationMs: null });
+                    }
                     const last = parts[parts.length - 1];
                     if (last && last.type === "reasoning") {
                         last.text += event.text;
@@ -333,6 +346,15 @@ export function useChat(
                     break;
                 }
                 case "tool-call": {
+                    // End current reasoning group if active
+                    const lastGroup = reasoningGroupsRef.current[reasoningGroupsRef.current.length - 1];
+                    if (lastGroup && lastGroup.durationMs === null) {
+                        lastGroup.durationMs = Date.now() - lastGroup.startTime;
+                        const lastPart = parts[parts.length - 1];
+                        if (lastPart?.type === "reasoning") {
+                            lastPart.durationMs = lastGroup.durationMs;
+                        }
+                    }
                     const tcArgs = event.args as Record<string, unknown>;
                     const formattedArgs = Object.entries(tcArgs)
                         .filter(([k]) => k !== "timeout")
@@ -341,7 +363,9 @@ export function useChat(
                     const formattedName = event.toolName.replace(/([A-Z])/g, " $1").trim().replace(/^./, (c) => c.toUpperCase());
                     const tcText = `${formattedName}: ${formattedArgs}`;
 
-                    toolCallTextRef.current += (toolCallTextRef.current ? "\n" : "") + tcText;
+                    // Replace tool call text instead of accumulating (only show latest)
+                    toolCallTextRef.current = tcText;
+                    displayedToolCallRef.current = "";
 
                     parts.push({
                         type: "tool-call",
@@ -363,6 +387,15 @@ export function useChat(
                     break;
                 }
                 case "text-delta": {
+                    // End current reasoning group if active
+                    const lastPart = parts[parts.length - 1];
+                    if (lastPart?.type === "reasoning") {
+                        const lastGroup = reasoningGroupsRef.current[reasoningGroupsRef.current.length - 1];
+                        if (lastGroup && lastGroup.durationMs === null) {
+                            lastGroup.durationMs = Date.now() - lastGroup.startTime;
+                            lastPart.durationMs = lastGroup.durationMs;
+                        }
+                    }
                     const last = parts[parts.length - 1];
                     if (last && last.type === "text") {
                         last.text += event.text;
@@ -377,6 +410,16 @@ export function useChat(
                     if (!isActiveRequest(activeStream.requestId)) return;
                     activeStream.done = true;
                     streamDoneRef.current = true;
+
+                    // End current reasoning group if active
+                    const lastGroup = reasoningGroupsRef.current[reasoningGroupsRef.current.length - 1];
+                    if (lastGroup && lastGroup.durationMs === null) {
+                        lastGroup.durationMs = Date.now() - lastGroup.startTime;
+                        const lastPart = parts[parts.length - 1];
+                        if (lastPart?.type === "reasoning") {
+                            lastPart.durationMs = lastGroup.durationMs;
+                        }
+                    }
 
                     fullTextRef.current = parts
                         .filter((p) => p.type === "text")
@@ -398,6 +441,7 @@ export function useChat(
                             ...prev,
                             parts: [...parts],
                             fullText: fullTextRef.current,
+                            reasoningGroups: [...reasoningGroupsRef.current],
                         };
                     });
                     break;
@@ -435,6 +479,7 @@ export function useChat(
         displayedTextRef.current = "";
         reasoningTextRef.current = "";
         displayedReasoningRef.current = "";
+        reasoningGroupsRef.current = [];
         toolCallTextRef.current = "";
         displayedToolCallRef.current = "";
         activeStreamRef.current = activeStream;
@@ -445,6 +490,7 @@ export function useChat(
             displayText: "",
             reasoningText: "",
             displayedReasoningText: "",
+            reasoningGroups: [],
             toolCallText: "",
             displayedToolCallText: "",
             mode,
