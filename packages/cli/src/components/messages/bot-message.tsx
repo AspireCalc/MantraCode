@@ -12,6 +12,8 @@ type Props = {
     duration?: string;
     streaming?: boolean;
     displayText?: string;
+    displayedReasoningText?: string;
+    displayedToolCallText?: string;
     interrupted?: boolean;
 };
 
@@ -50,7 +52,7 @@ function groupConsecutiveParts(parts: ClientMessagePart[]): PartGroup[] {
     return groups;
 }
 
-export function BotMessage({ parts, model, mode, duration, streaming = false, displayText, interrupted = false }: Props) {
+export function BotMessage({ parts, model, mode, duration, streaming = false, displayText, displayedReasoningText, displayedToolCallText, interrupted = false }: Props) {
     const { colors } = useTheme();
     const [showCursor, setShowCursor] = useState(true);
 
@@ -60,26 +62,60 @@ export function BotMessage({ parts, model, mode, duration, streaming = false, di
         return () => clearInterval(interval);
     }, [streaming]);
 
-    // const text = displayText ?? parts
-    //     .filter((p) => p.type === "text")
-    //     .map((p) => p.text)
-    //     .join("");
+    const hasDisplayText = streaming && displayText !== undefined;
+    const text = hasDisplayText
+        ? displayText
+        : parts.filter((p) => p.type === "text").map((p) => p.text).join("");
+
+    const visibleParts = hasDisplayText
+        ? parts.filter((p) => p.type !== "text")
+        : parts;
+
+    const hasDisplayedReasoning = streaming && displayedReasoningText !== undefined;
+    const reasoningPartLengths = hasDisplayedReasoning
+        ? (() => {
+            const reasoningParts = parts.filter((p): p is Extract<ClientMessagePart, { type: "reasoning" }> => p.type === "reasoning");
+            const lengths: number[] = [];
+            let consumed = 0;
+            for (const p of reasoningParts) {
+                const take = Math.min(p.text.length, Math.max(0, displayedReasoningText!.length - consumed));
+                lengths.push(take);
+                consumed += p.text.length;
+            }
+            return lengths;
+        })()
+        : undefined;
+
+    const hasDisplayedToolCall = streaming && displayedToolCallText !== undefined;
+    const toolCallPartLengths = hasDisplayedToolCall
+        ? (() => {
+            const tcParts = parts.filter((p): p is ClientToolCallPart => p.type === "tool-call");
+            const lengths: number[] = [];
+            let consumed = 0;
+            for (let i = 0; i < tcParts.length; i++) {
+                const p = tcParts[i]!;
+                const formattedText = `${formatToolName(p.name)}: ${formatToolArgs(p)}`;
+                const take = Math.min(formattedText.length, Math.max(0, displayedToolCallText!.length - consumed));
+                lengths.push(take);
+                consumed += formattedText.length;
+                if (i < tcParts.length - 1) consumed += 1;
+            }
+            return lengths;
+        })()
+        : undefined;
 
     return (
         <box width={"100%"} alignItems="center">
-            {/* <box paddingY={1} width={"100%"}>
-                <box paddingX={3} width={"100%"}>
-                    <text>
-                        {text}
-                        {streaming ? (showCursor ? "▌" : " ") : ""}
-                    </text>
-                </box>
-            </box> */}
-
-            {groupConsecutiveParts(parts).map((group) => (
+            {groupConsecutiveParts(visibleParts).map((group) => {
+                let reasoningIdx = -1;
+                let tcIdx = -1;
+                return (
                 <box key={group.key} paddingY={1} width={"100%"}>
                     {group.parts.map((part, j) => {
                         if (part.type === "reasoning") {
+                            reasoningIdx++;
+                            const textLen = reasoningPartLengths?.[reasoningIdx] ?? part.text.length;
+                            const text = part.text.slice(0, textLen);
                             return (
                                 <box
                                     key={`reasoning-${j}`}
@@ -93,13 +129,19 @@ export function BotMessage({ parts, model, mode, duration, streaming = false, di
                                     paddingX={2}
                                 >
                                     <text attributes={TextAttributes.ITALIC | TextAttributes.DIM}>
-                                        <em fg={colors.thinking}>Thinking:&nbsp;</em> {part.text}
+                                        <em fg={colors.thinking}>Thinking:&nbsp;</em> {text}
                                     </text>
                                 </box>
                             )
                         }
 
                         if (part.type === "tool-call") {
+                            tcIdx++;
+                            const formattedText = formatToolName(part.name) + ": " + formatToolArgs(part);
+                            const tcLen = toolCallPartLengths?.[tcIdx] ?? formattedText.length;
+                            const tcText = formattedText.slice(0, tcLen);
+                            const colonIdx = formattedText.indexOf(": ");
+                            const nameShown = tcLen > colonIdx + 2 ? colonIdx + 2 : tcLen;
                             return (
                                 <box
                                     key={part.id}
@@ -113,9 +155,7 @@ export function BotMessage({ parts, model, mode, duration, streaming = false, di
                                     paddingX={2}
                                 >
                                     <text attributes={TextAttributes.DIM}>
-                                        <em fg={colors.info}>{formatToolName(part.name)}:&nbsp;</em>
-                                        {formatToolArgs(part)}
-                                        {part.status === "calling" ? " …" : ""}
+                                        <em fg={colors.info}>{formattedText.slice(0, nameShown)}</em>{tcText.slice(nameShown)}{part.status === "calling" ? " …" : ""}
                                     </text>
                                 </box>
                             )
@@ -132,7 +172,15 @@ export function BotMessage({ parts, model, mode, duration, streaming = false, di
                         return null;
                     })}
                 </box>
-            ))}
+            )})}
+
+            {hasDisplayText && (
+                <box paddingX={3} paddingY={1} width={"100%"}>
+                    <text>
+                        {text}{showCursor ? "▌" : " "}
+                    </text>
+                </box>
+            )}
 
             <box paddingX={3} paddingBottom={1} gap={1} width={"100%"}>
                 <box flexDirection="row" gap={2}>

@@ -1,4 +1,4 @@
-import { resolve, relative } from "path";
+import { resolve, relative, isAbsolute } from "path";
 import { tool } from "ai";
 import { z } from "zod";
 
@@ -8,10 +8,10 @@ export function createGrepTool(cwd: string) {
     return tool({
         description: "Search file contents using a regex pattern. Returns matching lines with file paths and line numbers. Skips hidden directories, node_modules and binary files.",
         inputSchema: z.object({
-            pattern: z.string().describe("Regex pattern to. search for"),
+            pattern: z.string().describe("Regex pattern to search for"),
             path: z
                 .string()
-                .describe("Relative directory to search in (defaults to project root")
+                .describe("Relative directory to search in (defaults to project root)")
                 .default("."),
             include: z
                 .string()
@@ -20,8 +20,9 @@ export function createGrepTool(cwd: string) {
         }),
         execute: async ({ pattern, path, include }) => {
             const resolved = resolve(cwd, path);
+            const rel = relative(cwd, resolved);
 
-            if (!resolved.startsWith(cwd)) {
+            if (rel.startsWith("..") || isAbsolute(rel)) {
                 return { error: "Path is outside the project directory" }
             }
 
@@ -30,7 +31,7 @@ export function createGrepTool(cwd: string) {
                     "-rn",
                     "--color=never",
                     "--exclude-dir=node_modules",
-                    "--exclude-dire=.git",
+                    "--exclude-dir=.git",
                     "-E",
                 ];
 

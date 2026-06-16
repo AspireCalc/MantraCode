@@ -42,7 +42,8 @@ function mapDbMessages(dbMessages: SessionData["messages"]): Message[] {
         const parts: ClientMessagePart[] = parsedParts?.success
             ? parsedParts.data.map((p) =>
                 p.type === "tool-call" ? { ...p, status: "done" as const } : p,
-            ) : [];
+            )
+            : (m.content ? [{ type: "text", text: m.content }] : []);
 
         return {
             id: m.id,
@@ -100,7 +101,7 @@ function SessionChat({ session }: { session: SessionData }) {
             interruptible={streaming.status === "streaming"}
         >
             {[...messages, ...(streaming.status === "streaming" && streaming.parts.length > 0
-                ? [{ _key: "__streaming__" as const, parts: streaming.parts, model: streaming.model, mode: streaming.mode, displayText: streaming.displayText }]
+                ? [{ _key: "__streaming__" as const, parts: streaming.parts, model: streaming.model, mode: streaming.mode, displayText: streaming.displayText, displayedReasoningText: streaming.displayedReasoningText, displayedToolCallText: streaming.displayedToolCallText }]
                 : []
             )].map((item) => {
                 if ("_key" in item) {
@@ -111,6 +112,8 @@ function SessionChat({ session }: { session: SessionData }) {
                             model={item.model}
                             mode={item.mode}
                             displayText={item.displayText}
+                            displayedReasoningText={item.displayedReasoningText}
+                            displayedToolCallText={item.displayedToolCallText}
                             streaming
                         />
                     );

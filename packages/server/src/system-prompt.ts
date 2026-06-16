@@ -32,16 +32,24 @@ export function buildSystemPrompt({ cwd, mode }: SystemPromptParams): string {
             - Ask for clarification only when necessary.
             `);
     } else {
-        parts.push(`
-            ## Mode: BUILD
-            You are in build mode. Your job is to implement changes directly.
+        const buildLines = [
+            "## Mode: BUILD",
+            "You are in build mode. Your job is to implement changes directly.",
+            "",
+            "- Read and understand the relevant code before making changes.",
+        ];
 
-            - Read and understand the relevant code before making changes.
-            - Use \`writeFile\` to create new files.
-            - Use \`editFile\` for targeted modifications.
-            - Use \`bash\` to run commands such as tests, builds, and git operations.
-            - Verify your changes when possible after making them.
-            `);
+        if (cwd) {
+            buildLines.push(
+                "- Use `writeFile` to create new files.",
+                "- Use `editFile` for targeted modifications.",
+                "- Use `bash` to run commands such as tests, builds, and git operations.",
+            );
+        }
+
+        buildLines.push("- Verify your changes when possible after making them.");
+
+        parts.push(buildLines.join("\n"));
     }
 
     if (cwd && mode === "PLAN") {

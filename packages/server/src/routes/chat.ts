@@ -380,9 +380,10 @@ const app = new Hono()
     })
     .post("/:sessionId/interrupt", zValidator("json", z.object({
         content: z.string().optional(),
+        parts: messagePartsSchema.optional(),
     })), async (c) => {
         const sessionId = c.req.param("sessionId");
-        const { content: interruptedContent } = c.req.valid("json");
+        const { content: interruptedContent, parts: interruptedParts } = c.req.valid("json");
 
         const streamState = activeStreamControllers.get(sessionId);
         if (streamState) {
@@ -397,6 +398,7 @@ const app = new Hono()
                         model: streamState.model,
                         content: interruptedContent ?? streamState.content,
                         mode: streamState.mode,
+                        parts: interruptedParts as Prisma.InputJsonValue | undefined,
                     },
                 });
             }

@@ -1,4 +1,4 @@
-import { resolve, relative, dirname } from "path";
+import { resolve, relative, dirname, isAbsolute } from "path";
 import { writeFile, mkdir } from "fs/promises";
 import { tool } from "ai";
 import { z } from "zod";
@@ -12,8 +12,9 @@ export function createWriteFileTool(cwd: string) {
         }),
         execute: async ({ path, content }) => {
             const resolved = resolve(cwd, path);
+            const rel = relative(cwd, resolved);
 
-            if (!resolved.startsWith(cwd)) {
+            if (rel.startsWith("..") || isAbsolute(rel)) {
                 return { error: "Path is outside the project directory" }
             }
 

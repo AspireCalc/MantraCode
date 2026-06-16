@@ -1,4 +1,4 @@
-import { resolve, relative } from "path";
+import { resolve, relative, isAbsolute } from "path";
 import { tool } from "ai";
 import { z } from "zod";
 
@@ -16,8 +16,9 @@ export function createGlobTool(cwd: string) {
         }),
         execute: async ({ pattern, path }) => {
             const resolved = resolve(cwd, path);
+            const rel = relative(cwd, resolved);
 
-            if (!resolved.startsWith(cwd)) {
+            if (rel.startsWith("..") || isAbsolute(rel)) {
                 return { error: "Path is outside the project directory" }
             }
 

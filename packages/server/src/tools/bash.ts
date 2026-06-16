@@ -11,7 +11,7 @@ export function createBashTool(cwd: string) {
             command: z.string().describe("The shell command to execute"),
             timeout: z
                 .number()
-                .describe("Timout in milliseconds (default: 30000)")
+                .describe("Timeout in milliseconds (default: 30000)")
                 .default(DEFAULT_TIMEOUT),
         }),
         execute: async ({ command, timeout }) => {
@@ -23,7 +23,9 @@ export function createBashTool(cwd: string) {
                     env: { ...process.env, TERM: "dumb" },
                 });
 
+                let timedOut = false;
                 const timer = setTimeout(() => {
+                    timedOut = true;
                     proc.kill();
                 }, timeout);
 
@@ -41,6 +43,7 @@ export function createBashTool(cwd: string) {
                     stdout: truncate(stdout),
                     stderr: truncate(stderr),
                     exitCode,
+                    timedOut,
                 };
             } catch (err) {
                 const message = err instanceof Error ? err.message : String(err);

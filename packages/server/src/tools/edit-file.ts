@@ -1,4 +1,4 @@
-import { resolve, relative } from "path";
+import { resolve, relative, isAbsolute } from "path";
 import { readFile, writeFile } from "fs/promises";
 import { tool } from "ai";
 import { z } from "zod";
@@ -15,8 +15,9 @@ export function createEditFileTool(cwd: string) {
         }),
         execute: async ({ path, oldString, newString }) => {
             const resolved = resolve(cwd, path);
+            const rel = relative(cwd, resolved);
 
-            if (!resolved.startsWith(cwd)) {
+            if (rel.startsWith("..") || isAbsolute(rel)) {
                 return { error: "Path is outside the project directory" };
             }
 
@@ -31,7 +32,7 @@ export function createEditFileTool(cwd: string) {
 
                 if (occurrences > 1) {
                     return {
-                        error: `oldString is ambiquos - found ${occurrences} matches. Provide more surrounding context to make it unique.`
+                        error: `oldString is ambiguous - found ${occurrences} matches. Provide more surrounding context to make it unique.`
                     };
                 }
 
