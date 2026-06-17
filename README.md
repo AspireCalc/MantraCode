@@ -114,10 +114,10 @@ bun run dev:cli
 | `GOOGLE_VERTEX_PROJECT` | Google Vertext Project Name | — |
 | `CLERK_OAUTH_CLIENT_SECRET` | Clerk OAuth Client Secret | — |
 | `CLERK_OAUTH_CLIENT_ID` | Clerk OAuth Client ID | — |
-| `CLERK_FRONTED_API` | Clerk fronted API | — |
+| `CLERK_FRONTEND_API` | Clerk frontend API | — |
 | `CLERK_SECRET_KEY` | Clerk Secret Key | — |
 | `CLERK_PUBLISHABLE_KEY` | Clerk Publishable Key | — |
-| `JWT_SECRET` | JWT Secret | `jwt-secret    ` |
+| `JWT_SECRET` | JWT Secret | `jwt-secret` |
 
 ---
 

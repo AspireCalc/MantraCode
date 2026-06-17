@@ -26,6 +26,10 @@ const app = new Hono().get("/callback", (c) => {
             throw new Error("Invalid port in state")
         }
 
+        if (port < 1024 || port > 65535) {
+            throw new Error("Port must be in the ephemeral range (1024-65535)");
+        }
+
         const redirectUrl = `http://localhost:${port}/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
 
         return c.redirect(redirectUrl);

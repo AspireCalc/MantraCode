@@ -21,6 +21,10 @@ const MAX_VISIBLE_MENTIONS = 8;
 const CURRENT_DIRECTORY = process.cwd();
 const MAX_FALLBACK_MENTION_CANDIDATES = 32;
 const MENTION_QUERY_CHARACTER = /[A-Za-z0-9._/-]/;
+const MENTION_PATTERN_SOURCE = "@[A-Za-z0-9._/-]+";
+export function getMentionPattern(): RegExp {
+    return new RegExp(MENTION_PATTERN_SOURCE, "g");
+}
 const RECURSIVE_MENTION_IGNORED_DIRECTORIES = new Set(["node_modules"]);
 
 type MentionMatch = {
@@ -405,10 +409,10 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
         syncMentionMenu(text, textarea.cursorOffset);
 
         // Highlight @mention patterns in the input bar
-        const mentionRegex = /@[A-Za-z0-9._/-]+/g;
         const mentionRanges: Array<{ start: number; end: number }> = [];
+        const mentionPattern = getMentionPattern();
         let match;
-        while ((match = mentionRegex.exec(text)) !== null) {
+        while ((match = mentionPattern.exec(text)) !== null) {
             mentionRanges.push({ start: match.index, end: match.index + match[0].length });
         }
 
@@ -536,11 +540,11 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
             if (ignore) return;
 
             setMentionCandidates(nextCandidates);
-            setMentionSelectedIndex((curentIndex) => {
+            setMentionSelectedIndex((cureentIndex) => {
                 if (nextCandidates.length === 0) {
                     return 0;
                 }
-                return Math.min(curentIndex, nextCandidates.length - 1);
+                return Math.min(cureentIndex, nextCandidates.length - 1);
             });
         };
 
@@ -693,25 +697,25 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
                 return nextIndex;
             });
         } else if (key.name === "down") {
-          key.preventDefault();
-          setMentionSelectedIndex((currentIndex) => {
-            if (mentionCandidates.length === 0) {
-              return 0;
-            }
-            
-            const nextIndex = Math.min(mentionCandidates.length - 1, currentIndex + 1);
-            const scrollbox = mentionScrollRef.current;
+            key.preventDefault();
+            setMentionSelectedIndex((currentIndex) => {
+                if (mentionCandidates.length === 0) {
+                    return 0;
+                }
 
-            if (scrollbox) {
-              const viewportHeight = scrollbox.viewport.height;
-              const visibleEnd = scrollbox.scrollTop + viewportHeight - 1;
-              if (nextIndex > visibleEnd) {
-                scrollbox.scrollTo(nextIndex - viewportHeight + 1);
-              }
-            }
+                const nextIndex = Math.min(mentionCandidates.length - 1, currentIndex + 1);
+                const scrollbox = mentionScrollRef.current;
 
-            return nextIndex;
-          });
+                if (scrollbox) {
+                    const viewportHeight = scrollbox.viewport.height;
+                    const visibleEnd = scrollbox.scrollTop + viewportHeight - 1;
+                    if (nextIndex > visibleEnd) {
+                        scrollbox.scrollTo(nextIndex - viewportHeight + 1);
+                    }
+                }
+
+                return nextIndex;
+            });
         }
     });
 
@@ -849,6 +853,7 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
                         maxHeight={20}
                         keyBindings={TEXTAREA_KEY_BINDINGS}
                         onContentChange={handleTextareaContentChange}
+                        onCursorChange={handleTextareaCursorChange}
                         placeholder={`Ask anything... "Fix a bug in the database"`}
                     />
                     <box width={"100%"} flexDirection="row">

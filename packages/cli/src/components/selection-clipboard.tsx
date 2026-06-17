@@ -1,10 +1,12 @@
 import { useEffect } from "react";
 import { useRenderer } from "@opentui/react";
 import { useToast } from "../providers/toast";
+import { useRef } from "react";
 
 export function SelectionClipboard() {
     const renderer = useRenderer();
     const toast = useToast();
+    const lastCopiedRef = useRef<string>("");
 
     useEffect(() => {
         const handler = () => {
@@ -12,7 +14,7 @@ export function SelectionClipboard() {
             if (!selection) return;
 
             const text = selection.getSelectedText();
-            if (text && text.trim()) {
+            if (text && text.trim() && text !== lastCopiedRef.current) {
                 renderer.copyToClipboardOSC52(text);
                 toast.show({ message: "Copied to clipboard" });
             }

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { Hono } from "hono";
 import { createTools } from "../tools";
 import { streamSSE } from "hono/streaming";
-import { streamText as aiStreamText, stepCountIs } from "ai";
+import { streamText as aiStreamText, stepCountIs, type ToolSet } from "ai";
 import { zValidator } from "@hono/zod-validator";
 import { db } from "@mantracode/database/client";
 import type { Prisma } from "@mantracode/database";
@@ -72,6 +72,19 @@ function getResumableUserMessage(
 
 
 
+function isTrivialQuery(text: string): boolean {
+    const trimmed = text.trim().toLowerCase();
+    if (trimmed.length < 3) return true;
+    const normalized = trimmed.replace(/[.!?\s]+$/, "").trim();
+    const greetings = new Set([
+        "hey", "hi", "hello", "hii", "hey there", "hi there", "hello there",
+        "thanks", "thank you", "good", "ok", "yes", "no", "okay", "sure",
+        "great", "nice", "bye", "goodbye", "what's up", "how are you",
+        "howdy", "yo", "sup", "good morning", "good afternoon", "good evening",
+    ]);
+    return greetings.has(normalized);
+}
+
 type StreamParams = {
     sessionId: string;
     model: string;
@@ -83,17 +96,18 @@ type StreamParams = {
     mode: Mode;
     abortController: AbortController;
     streamState: StreamState;
+    tools?: ToolSet;
 };
 
 async function streamAIResponse(
     stream: Parameters<Parameters<typeof streamSSE>[1]>[0],
     params: StreamParams,
 ) {
-    const { sessionId, model, cwd, history, mode, abortController, streamState } = params;
+    const { sessionId, model, cwd, history, mode, abortController, streamState, tools } = params;
     const startTime = Date.now();
     const parts: MessagePart[] = [];
     const resolvedModel = resolveChatModel(model);
-    const tools = cwd ? createTools(cwd, mode) : undefined;
+    const providerOptions = tools ? resolvedModel.providerOptions : undefined;
 
     function finalizeReasoningDuration(parts: MessagePart[], startTime: number) {
         const elapsed = Date.now() - startTime;
@@ -111,7 +125,7 @@ async function streamAIResponse(
             abortSignal: abortController.signal,
             system: buildSystemPrompt({ cwd, mode }),
             stopWhen: tools ? stepCountIs(50) : undefined,
-            providerOptions: resolvedModel.providerOptions,
+            providerOptions,
         });
 
         let reasoningGroupStartTime: number | null = null;
@@ -289,6 +303,11 @@ const app = new Hono<AuthenticatedEnv>()
             return c.json({ error: "Session already has an active stream" }, 409);
         }
 
+        const resumeCwd = session.cwd;
+        const resumeQuery = session.messages.at(-1)?.content ?? "";
+        const needsTools = !isTrivialQuery(resumeQuery) && !!resumeCwd;
+        const tools = needsTools && resumeCwd ? createTools(resumeCwd, resumableMessage.mode) : undefined;
+
         const history = buildConversationHistory(session.messages);
         const abortController = new AbortController();
         const streamState: StreamState = {
@@ -318,6 +337,7 @@ const app = new Hono<AuthenticatedEnv>()
                             cwd: session.cwd,
                             mode: resumableMessage.mode,
                             model: resumableMessage.model,
+                            tools,
                         });
                     } finally {
                         activeResumeSessionIds.delete(sessionId);
@@ -373,6 +393,11 @@ const app = new Hono<AuthenticatedEnv>()
             },
         ]);
 
+        const submitCwd = session.cwd;
+        const query = data.content;
+        const needsTools = !isTrivialQuery(query) && !!submitCwd;
+        const tools = needsTools && submitCwd ? createTools(submitCwd, data.mode) : undefined;
+
         const abortController = new AbortController();
         const streamState: StreamState = {
             controller: abortController,
@@ -397,6 +422,7 @@ const app = new Hono<AuthenticatedEnv>()
                     mode: data.mode,
                     cwd: session.cwd,
                     model: data.model,
+                    tools,
                 });
             },
             async (err, stream) => {

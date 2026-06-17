@@ -1,3 +1,4 @@
+import { getMentionPattern } from "../input-bar";
 import { EmptyBorder } from "../border";
 import { useTheme } from "../../providers/theme";
 import { Mode } from "@mantracode/database/enums";
@@ -9,11 +10,11 @@ type Props = {
 
 export function UserMessage({ message, mode }: Props) {
     const { colors } = useTheme();
-    const mentionRegex = /@[A-Za-z0-9._/-]+/g;
     const parts: Array<{ text: string; isMention: boolean }> = [];
     let lastIndex = 0;
+    const mentionPattern = getMentionPattern();
     let match;
-    while ((match = mentionRegex.exec(message)) !== null) {
+    while ((match = mentionPattern.exec(message)) !== null) {
         if (match.index > lastIndex) {
             parts.push({ text: message.slice(lastIndex, match.index), isMention: false });
         }

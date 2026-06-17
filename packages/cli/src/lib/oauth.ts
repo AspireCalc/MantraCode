@@ -35,11 +35,11 @@ function getErrorMessage(error: unknown) {
 }
 
 export async function performLogin() {
-    const clerkFrontendAPI = process.env.CLERK_FRONTED_API;
+    const clerkFrontendAPI = process.env.CLERK_FRONTEND_API;
     const clientId = process.env.CLERK_OAUTH_CLIENT_ID;
     const apiUrl = process.env.API_URL ?? "http://localhost:3000";
 
-    if (!clerkFrontendAPI) throw new Error("CLERK_FRONTED_API not set");
+    if (!clerkFrontendAPI) throw new Error("CLERK_FRONTEND_API not set");
     if (!clientId) throw new Error("CLERK_OAUTH_CLIENT_ID not set");
 
     const nonce = crypto.randomUUID();
@@ -147,7 +147,12 @@ export async function performLogin() {
         authorizeUrl.searchParams.set("code_challenge", codeChallenge);
         authorizeUrl.searchParams.set("code_challenge_method", "S256");
 
-        void open(authorizeUrl.toString());
+        open(authorizeUrl.toString()).catch((err) => {
+            if (settled) return;
+            settled = true;
+            server.stop();
+            reject(new Error(`Failed to open browser: ${getErrorMessage(err)}`));
+        });
 
         setTimeout(() => {
             if (!settled) {

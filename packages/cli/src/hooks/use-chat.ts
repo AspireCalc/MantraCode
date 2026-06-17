@@ -357,7 +357,7 @@ export function useChat(
                     }
                     const tcArgs = event.args as Record<string, unknown>;
                     const formattedArgs = Object.entries(tcArgs)
-                        .filter(([k]) => k !== "timeout")
+                        .filter(([k]) => k !== "timeout" && k !== "content")
                         .map(([, v]) => String(v))
                         .join(" ");
                     const formattedName = event.toolName.replace(/([A-Z])/g, " $1").trim().replace(/^./, (c) => c.toUpperCase());

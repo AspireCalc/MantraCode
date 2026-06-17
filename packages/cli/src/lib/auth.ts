@@ -7,7 +7,7 @@ type AuthData = {
 };
 
 const AUTH_DIR = join(homedir(), ".mantracode");
-const AUTH_FILE = join(homedir(), "auth.json");
+const AUTH_FILE = join(AUTH_DIR, "auth.json");
 
 export function getAuth(): AuthData | null {
     try {
