@@ -68,7 +68,6 @@ type ReasoningGroup = {
 
 function getReasoningGroups(
     parts: ClientMessagePart[],
-    reasoningText: string,
 ): ReasoningGroup[] {
     const groups: ReasoningGroup[] = [];
     let offset = 0;
@@ -176,7 +175,7 @@ export function BotMessage({
             )
             .map((p) => p.text)
             .join("");
-    const reasoningGroupsInfo = getReasoningGroups(parts, fullReasoningText);
+    const reasoningGroupsInfo = getReasoningGroups(parts);
     const reasoningColor =
         mode === Mode.PLAN ? colors.planMode : colors.primary;
 
@@ -354,7 +353,7 @@ export function BotMessage({
             )}
 
             {/* Footer */}
-            <box paddingTop={1} width={"100%"} paddingX={2}>
+            <box width={"100%"} paddingX={2}>
                 <box paddingBottom={1} width={"100%"} gap={1}>
                     <box flexDirection="row" gap={2}>
                         <text

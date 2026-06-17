@@ -70,7 +70,8 @@ const KEYWORDS_BY_LANG: Record<string, string[]> = {
     ],
 };
 
-function getKeywords(language: string): Set<string> {
+function getKeywords(language?: string): Set<string> {
+    if (!language) return new Set();
     const norm = language.toLowerCase().replace(/^\d+/, "");
     const list = KEYWORDS_BY_LANG[norm] ?? KEYWORDS_BY_LANG.javascript;
     return new Set(list);
@@ -81,7 +82,7 @@ const COMMENT_RE = /^\/\/.*|^#.*|^\/\*[\s\S]*?\*\//;
 const NUMBER_RE = /^\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/;
 const IDENTIFIER_RE = /^[a-zA-Z_$][a-zA-Z0-9_$]*/;
 
-export function tokenizeLine(line: string, language: string): StyledSegment[] {
+export function tokenizeLine(line: string, language?: string): StyledSegment[] {
     const keywords = getKeywords(language);
     const segments: StyledSegment[] = [];
     let i = 0;

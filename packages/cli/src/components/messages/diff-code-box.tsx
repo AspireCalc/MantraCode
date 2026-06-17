@@ -41,7 +41,7 @@ export function DiffCodeBox({ diffText, colors }: Props) {
         >
             {lines.map((line, i) => {
                 if (line.kind === "context") {
-                    const tokens = tokenizeLine(line.text, "diff");
+                    const tokens = tokenizeLine(line.text);
                     return (
                         <box key={i} flexDirection="row" width={"100%"}>
                             <box flexGrow={1} paddingLeft={1}>
@@ -66,7 +66,7 @@ export function DiffCodeBox({ diffText, colors }: Props) {
 
                 const bgColor = line.kind === "removed" ? colors.error : colors.success;
                 const indicator = line.kind === "removed" ? "-" : "+";
-                const tokens = tokenizeLine(line.text, "diff");
+                const tokens = tokenizeLine(line.text);
 
                 return (
                     <box

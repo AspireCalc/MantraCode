@@ -14,9 +14,9 @@ function useTerminalWidth(): number {
     const [width, setWidth] = useState<number>(getWidth);
     useEffect(() => {
         const onResize = () => setWidth(getWidth());
-        process.stdout.on("resize", onResize);
+        if (process?.stdout) process.stdout.on("resize", onResize);
         return () => {
-            process.stdout.off("resize", onResize);
+            if (process?.stdout) process.stdout.off("resize", onResize);
         };
     }, []);
     return width;
@@ -29,6 +29,7 @@ type InlineSegment =
     | { type: "text"; text: string }
     | { type: "bold"; text: string }
     | { type: "italic"; text: string }
+    | { type: "boldItalic"; text: string }
     | { type: "code"; text: string }
     | { type: "strikethrough"; text: string }
     | { type: "link"; text: string; url: string };
@@ -45,8 +46,7 @@ function parseInline(text: string): InlineSegment[] {
         if (match.index > lastIndex)
             segments.push({ type: "text", text: text.slice(lastIndex, match.index) });
         if (match[2] !== undefined) {
-            segments.push({ type: "bold", text: match[2] });
-            segments.push({ type: "italic", text: match[2] });
+            segments.push({ type: "boldItalic", text: match[2] });
         } else if (match[3] !== undefined) {
             segments.push({ type: "bold", text: match[3] });
         } else if (match[4] !== undefined) {
@@ -91,6 +91,13 @@ function renderInline(
             case "italic":
                 children.push(
                     <em key={key++} attributes={TextAttributes.ITALIC}>{seg.text}</em>,
+                );
+                break;
+            case "boldItalic":
+                children.push(
+                    <em key={key++} attributes={TextAttributes.BOLD | TextAttributes.ITALIC}>
+                        {seg.text}
+                    </em>,
                 );
                 break;
             case "code":
@@ -304,48 +311,6 @@ function computeColWidths(
     }
 
     return result;
-}
-
-function buildTableString(
-    headers: string[],
-    rows: string[][],
-    colWidths: number[],
-): string {
-    const V = "│";
-    const H = "─";
-    const TL = "┌"; const TR = "┐";
-    const BL = "└"; const BR = "┘";
-    const TT = "┬"; const BT = "┴";
-    const LT = "├"; const RT = "┤"; const CR = "┼";
-
-    function hbar(l: string, m: string, r: string): string {
-        return l + colWidths.map((w) => H.repeat(w + 2)).join(m) + r;
-    }
-
-    function cell(value: string, colIdx: number): string {
-        const w = colWidths[colIdx] ?? 0;
-        const content = truncate(value, w);
-        const pad = Math.max(w - stringWidth(content), 0);
-        return ` ${content}${" ".repeat(pad)} `;
-    }
-
-    function dataRow(cells: string[]): string {
-        const normalised = Array.from(
-            { length: colWidths.length },
-            (_, i) => cells[i] ?? "",
-        );
-        return V + normalised.map((c, i) => cell(c, i)).join(V) + V;
-    }
-
-    const lines: string[] = [
-        hbar(TL, TT, TR),
-        dataRow(headers),
-        hbar(LT, CR, RT),
-        ...rows.map((r) => dataRow(r)),
-        hbar(BL, BT, BR),
-    ];
-
-    return lines.join("\n");
 }
 
 // ---------------------------------------------------------------------------

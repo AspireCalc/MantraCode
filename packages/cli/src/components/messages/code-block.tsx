@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
 import { TextAttributes } from "@opentui/core";
 import { useRenderer } from "@opentui/react";
 import { EmptyBorder } from "../border";
@@ -15,9 +15,14 @@ export function CodeBlock({ code, language, colors }: Props) {
     const renderer = useRenderer();
     const lines = code.split("\n");
     const langLabel = isLanguageKnown(language) ? language : "";
+    const [copied, setCopied] = useState(false);
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const handleCopy = useCallback(() => {
         renderer.copyToClipboardOSC52(code);
+        setCopied(true);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => setCopied(false), 4000);
     }, [renderer, code]);
 
     return (
@@ -37,10 +42,11 @@ export function CodeBlock({ code, language, colors }: Props) {
                 </box>
                 <box onMouseDown={handleCopy}>
                     <text
+                        selectable={false}
                         attributes={TextAttributes.DIM}
                         fg={colors.primary}
                     >
-                        [copy]
+                        {copied ? "[copied]" : "[copy]"}
                     </text>
                 </box>
             </box>
