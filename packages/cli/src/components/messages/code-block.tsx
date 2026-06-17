@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { TextAttributes } from "@opentui/core";
 import { useRenderer } from "@opentui/react";
 import { EmptyBorder } from "../border";
@@ -24,6 +24,12 @@ export function CodeBlock({ code, language, colors }: Props) {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         timeoutRef.current = setTimeout(() => setCopied(false), 4000);
     }, [renderer, code]);
+
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        };
+    }, []);
 
     return (
         <box width={"100%"} marginY={1}>
