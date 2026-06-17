@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Git & GitHub Master Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-[#0d1117] text-[#c9d1d9] font-sans selection:bg-blue-600 selection:text-white min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="sticky top-0 z-50 bg-[#161b22]/95 border-b border-[#30363d] backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <i class="fab fa-github text-3xl text-white"></i>
+                <span class="text-lg font-semibold text-white tracking-tight flex items-center gap-2">Git & GitHub <span class="bg-blue-500/10 text-blue-400 text-xs px-2 py-0.5 rounded-full border border-blue-500/30">Mastery Hub</span></span>
+            </div>
+            <nav class="hidden md:flex space-x-6 text-sm font-medium text-[#8b949e]">
+                <a href="#concepts" class="hover:text-white transition-colors">Core Concepts</a>
+                <a href="#commands" class="hover:text-white transition-colors">Command Reference</a>
+                <a href="#workflow" class="hover:text-white transition-colors">GitHub Flow</a>
+                <a href="#best-practices" class="hover:text-white transition-colors">Best Practices</a>
+            </nav>
+            <a href="https://github.com/join" target="_blank" class="bg-[#238636] hover:bg-[#2ea043] text-white px-3.5 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2"><i class="fab fa-github"></i> Sign Up</a>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="relative overflow-hidden py-16 border-b border-[#30363d]/50 bg-gradient-to-b from-[#161b22]/50 to-transparent">
+        <div class="max-w-5xl mx-auto px-4 text-center relative z-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-semibold mb-6 animate-pulse"><i class="fas fa-code-branch"></i> Git Version Control Simplified</div>
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-white tracking-tight mb-4">The Ultimate Git & GitHub Guide</h1>
+            <p class="text-lg text-[#8b949e] max-w-2xl mx-auto mb-8">Master the world's most popular distributed version control system and cloud collaboration platform.</p>
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="#commands" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-lg flex items-center gap-2"><i class="fas fa-terminal"></i> Browse Commands</a>
+                <a href="#workflow" class="bg-[#161b22] hover:bg-[#30363d]/40 text-white border border-[#30363d] px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2"><i class="fas fa-code-pull-request"></i> Learn GitHub Flow</a>
+            </div>
+        </div>
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(47,129,247,0.08)_0,transparent_100%)] pointer-events-none"></div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 py-12">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Sidebar -->
+            <aside class="hidden lg:block lg:col-span-1">
+                <div class="sticky top-24 space-y-6">
+                    <div class="bg-[#161b22] border border-[#30363d] rounded-xl p-5">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-[#8b949e] mb-4">Table of Contents</h3>
+                        <ul class="space-y-3 text-sm">
+                            <li><a href="#concepts" class="flex items-center gap-2.5 text-[#8b949e] hover:text-white transition-colors"><i class="fas fa-circle-info text-xs"></i><span>Core Concepts</span></a></li>
+                            <li><a href="#commands" class="flex items-center gap-2.5 text-[#8b949e] hover:text-white transition-colors"><i class="fas fa-terminal text-xs"></i><span>Command Reference</span></a></li>
+                            <li><a href="#workflow" class="flex items-center gap-2.5 text-[#8b949e] hover:text-white transition-colors"><i class="fas fa-network-wired text-xs"></i><span>GitHub Flow</span></a></li>
+                            <li><a href="#best-practices" class="flex items-center gap-2.5 text-[#8b949e] hover:text-white transition-colors"><i class="fas fa-shield-halved text-xs"></i><span>Best Practices</span></a></li>
+                        </ul>
+                    </div>
+                    <div class="bg-[#161b22] border border-[#30363d] rounded-xl p-5 space-y-4">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-[#8b949e]">Why Git & GitHub?</h4>
+                        <p class="text-xs text-[#8b949e]"><i class="fas fa-users text-blue-400 mr-1"></i> Over 100M developers collaborate globally on GitHub.</p>
+                        <p class="text-xs text-[#8b949e]"><i class="fas fa-shield text-green-400 mr-1"></i> Distributed backups mean safety on every machine.</p>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Content Area -->
+            <div class="lg:col-span-3 space-y-16">
+                <!-- Section 1 -->
+                <section id="concepts" class="scroll-mt-24 space-y-6">
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white border-b border-[#30363d] pb-4 flex items-center gap-3"><i class="fas fa-circle-info text-blue-500"></i> 1. Core Concepts</h2>
+                    <p class="text-[#8b949e] leading-relaxed">Understand the difference between Git (local version control) and GitHub (cloud collaboration platform), along with the foundational repository lifecycle stages.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-[#161b22] border border-[#30363d] rounded-xl p-6"><h3 class="text-white font-bold text-lg mb-3 flex items-center gap-2"><i class="fab fa-git-alt text-orange-400"></i> Git vs GitHub</h3><p class="text-sm text-[#8b949e] leading-relaxed"><strong class="text-white">Git</strong> is local tracking software installed on your machine. <strong class="text-white">GitHub</strong> is a cloud platform for remote hosting, collaboration, and pull-request workflows.</p></div>
+                        <div class="bg-[#161b22] border border-[#30363d] rounded-xl p-6">
+                            <h3 class="text-white font-bold text-lg mb-3 flex items-center gap-2"><i class="fas fa-server text-blue-400"></i> The Three States</h3>
+                            <ul class="text-sm text-[#8b949e] space-y-2">
+                                <li><strong class="text-white">Working Directory:</strong> Untracked or modified files currently being edited.</li>
+                                <li><strong class="text-white">Staging Area:</strong> Preparing and marking changes to be included in next commit.</li>
+                                <li><strong class="text-white">Local Repository:</strong> Sealed snapshots safely stored history.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 2 -->
+                <section id="commands" class="scroll-mt-24 space-y-6">
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white border-b border-[#30363d] pb-4 flex items-center gap-3"><i class="fas fa-terminal text-blue-500"></i> 2. Command Reference</h2>
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="relative flex-1">
+                            <i class="fas fa-search absolute left-3 top-3 text-gray-500"></i>
+                            <input type="text" id="commandSearch" placeholder="Search commands..." class="w-full bg-[#161b22] border border-[#30363d] rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div id="filterTags" class="flex flex-wrap gap-2 text-xs">
+                            <button data-filter="all" class="px-3 py-1.5 rounded-full bg-blue-600/20 text-blue-400 border border-blue-500/30 font-medium transition-colors">All</button>
+                            <button data-filter="setup" class="px-3 py-1.5 rounded-full bg-[#161b22] text-[#8b949e] border border-[#30363d] font-medium hover:text-white transition-colors">Setup</button>
+                            <button data-filter="basics" class="px-3 py-1.5 rounded-full bg-[#161b22] text-[#8b949e] border border-[#30363d] font-medium hover:text-white transition-colors">Basics</button>
+                            <button data-filter="branches" class="px-3 py-1.5 rounded-full bg-[#161b22] text-[#8b949e] border border-[#30363d] font-medium hover:text-white transition-colors">Branches</button>
+                            <button data-filter="remotes" class="px-3 py-1.5 rounded-full bg-[#161b22] text-[#8b949e] border border-[#30363d] font-medium hover:text-white transition-colors">Remotes</button>
+                            <button data-filter="advanced" class="px-3 py-1.5 rounded-full bg-[#161b22] text-[#8b949e] border border-[#30363d] font-medium hover:text-white transition-colors">Advanced</button>
+                        </div>
+                    </div>
+                    <div id="commandGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                </section>
+
+                <!-- Section 3 -->
+                <section id="workflow" class="scroll-mt-24 space-y-6">
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white border-b border-[#30363d] pb-4 flex items-center gap-3"><i class="fas fa-network-wired text-blue-500"></i> 3. GitHub Flow</h2>
+                    <p class="text-[#8b949e]">The recommended lightweight branch-based workflow for collaborative development.</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-[#161b22] border border-[#30363d] p-4 rounded-xl text-center space-y-2"><span class="text-blue-500 font-extrabold text-xl">01</span><h4 class="text-white font-bold text-sm">Create Branch</h4><p class="text-xs text-[#8b949e]">Branch off main to safely make changes.</p></div>
+                        <div class="bg-[#161b22] border border-[#30363d] p-4 rounded-xl text-center space-y-2"><span class="text-blue-500 font-extrabold text-xl">02</span><h4 class="text-white font-bold text-sm">Add Commits</h4><p class="text-xs text-[#8b949e]">Save progress with frequent, atomic local commits.</p></div>
+                        <div class="bg-[#161b22] border border-[#30363d] p-4 rounded-xl text-center space-y-2"><span class="text-blue-500 font-extrabold text-xl">03</span><h4 class="text-white font-bold text-sm">Open PR</h4><p class="text-xs text-[#8b949e]">Submit Pull Request to invite discussion and reviews.</p></div>
+                        <div class="bg-[#161b22] border border-[#30363d] p-4 rounded-xl text-center space-y-2"><span class="text-blue-500 font-extrabold text-xl">04</span><h4 class="text-white font-bold text-sm">Merge</h4><p class="text-xs text-[#8b949e]">Review tests, address comments, and merge into main.</p></div>
+                    </div>
+                </section>
+
+                <!-- Section 4 -->
+                <section id="best-practices" class="scroll-mt-24 space-y-6">
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white border-b border-[#30363d] pb-4 flex items-center gap-3"><i class="fas fa-shield-halved text-blue-500"></i> 4. Best Practices</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-[#161b22] border border-[#30363d] p-5 rounded-xl space-y-2"><h4 class="text-white font-bold text-sm flex items-center gap-2"><i class="fas fa-code-commit text-emerald-400"></i> Use Semantic Messages</h4><p class="text-xs text-[#8b949e]">Prefix commit messages with tags: <code class="text-white">feat:</code>, <code class="text-white">fix:</code>, <code class="text-white">docs:</code>, <code class="text-white">refactor:</code>. E.g., <code class="text-emerald-400">feat: add login toggle</code>.</p></div>
+                        <div class="bg-[#161b22] border border-[#30363d] p-5 rounded-xl space-y-2"><h4 class="text-white font-bold text-sm flex items-center gap-2"><i class="fas fa-eye-slash text-blue-400"></i> Protect Secrets</h4><p class="text-xs text-[#8b949e]">Always add credentials, dependencies, and environment files to your local <code class="text-white">.gitignore</code> file before staging files.</p></div>
+                        <div class="bg-[#161b22] border border-[#30363d] p-5 rounded-xl space-y-2"><h4 class="text-white font-bold text-sm flex items-center gap-2"><i class="fas fa-rotate text-purple-400"></i> Stay Rebased & Updated</h4><p class="text-xs text-[#8b949e]">Execute <code class="text-white">git pull</code> regularly to synchronize local repositories and minimize complicated merge conflicts.</p></div>
+                        <div class="bg-[#161b22] border border-[#30363d] p-5 rounded-xl space-y-2"><h4 class="text-white font-bold text-sm flex items-center gap-2"><i class="fas fa-vial text-yellow-400"></i> Keep Commits Focused</h4><p class="text-xs text-[#8b949e]">A single commit should only tackle one task or feature. Atomic commits make rollbacks and version history browsing straightforward.</p></div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-[#161b22] border-t border-[#30363d] py-8 text-center text-xs text-[#8b949e] space-y-2">
+        <div class="flex justify-center items-center gap-2 text-white font-medium"><i class="fab fa-github text-lg"></i><span>Git & GitHub Cheat Sheet</span></div>
+        <p>A compact, modern workspace and dynamic guide. Offline-ready.</p>
+        <div>&copy; <span id="year"></span>. All rights reserved.</div>
+    </footer>
+
+    <!-- Script -->
+    <script>
+        document.getElementById('year').innerText = new Date().getFullYear();
+        const commands = [
+            { c: 'setup', cmd: 'git config --global user.name "Name"', desc: 'Configure global Git username' },
+            { c: 'setup', cmd: 'git config --global user.email "email@example.com"', desc: 'Configure global Git email' },
+            { c: 'setup', cmd: 'git init', desc: 'Initialize a new local Git repository' },
+            { c: 'basics', cmd: 'git status', desc: 'Check status of working tree changes' },
+            { c: 'basics', cmd: 'git add <file>', desc: 'Add files to the staging area' },
+            { c: 'basics', cmd: 'git commit -m "msg"', desc: 'Record local snapshot of staging changes' },
+            { c: 'branches', cmd: 'git branch <name>', desc: 'Create a new feature branch' },
+            { c: 'branches', cmd: 'git checkout <branch>', desc: 'Switch to target branch' },
+            { c: 'branches', cmd: 'git merge <branch>', desc: 'Merge another branch into current' },
+            { c: 'remotes', cmd: 'git clone <url>', desc: 'Download repository from remote host' },
+            { c: 'remotes', cmd: 'git push <remote> <branch>', desc: 'Upload local branch commits to remote' },
+            { c: 'remotes', cmd: 'git pull', desc: 'Fetch and integrate remote changes' },
+            { c: 'advanced', cmd: 'git log --oneline', desc: 'View commit history in single-line logs' },
+            { c: 'advanced', cmd: 'git stash', desc: 'Shelve current uncommitted changes' }
+        ];
+
+        let currentCat = 'all';
+        const searchInput = document.getElementById('commandSearch');
+
+        function render() {
+            const q = searchInput.value.toLowerCase();
+            const grid = document.getElementById('commandGrid');
+            grid.innerHTML = commands
+                .filter(x => (currentCat === 'all' || x.c === currentCat) && (x.cmd.includes(q) || x.desc.toLowerCase().includes(q)))
+                .map(x => `
+                    <div class="bg-[#161b22] border border-[#30363d] rounded-lg p-3 hover:border-blue-500/50 flex justify-between items-center transition-all">
+                        <div class="overflow-hidden mr-2">
+                            <span class="text-[10px] text-blue-400 font-bold uppercase tracking-wider">${x.c}</span>
+                            <code class="block font-mono text-emerald-400 text-xs mt-0.5 whitespace-nowrap overflow-ellipsis overflow-hidden" title="${x.cmd}">${x.cmd}</code>
+                            <p class="text-[11px] text-[#8b949e] mt-0.5 leading-tight">${x.desc}</p>
+                        </div>
+                        <button onclick="copy('${x.cmd}', this)" class="text-[#8b949e] hover:text-white p-2 shrink-0 transition-colors" title="Copy"><i class="far fa-copy"></i></button>
+                    </div>
+                `).join('');
+        }
+
+        function copy(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                const i = btn.querySelector('i');
+                i.className = 'fas fa-check text-green-400';
+                setTimeout(() => i.className = 'far fa-copy', 1200);
+            });
+        }
+
+        searchInput.addEventListener('input', render);
+        document.querySelectorAll('#filterTags button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#filterTags button').forEach(b => b.className = "px-3 py-1.5 rounded-full bg-[#161b22] text-[#8b949e] border border-[#30363d] font-medium hover:text-white transition-colors");
+                btn.className = "px-3 py-1.5 rounded-full bg-blue-600/20 text-blue-400 border border-blue-500/30 font-medium transition-colors hover:bg-blue-600/30";
+                currentCat = btn.dataset.filter; render();
+            });
+        });
+
+        render();
+    </script>
+</body>
+</html>

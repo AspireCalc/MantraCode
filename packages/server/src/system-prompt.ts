@@ -62,11 +62,12 @@ export function buildSystemPrompt({ cwd, mode }: SystemPromptParams): string {
             - **glob** — Find files matching a pattern, such as \`**/*.ts\`.
             - **grep** — Search file contents with a regular expression.
 
-            ### Rules
-            1. Be decisive. Use \`glob\` and \`grep\` to find what is relevant, then read only the files you actually need. Do not scan the entire project unnecessarily.
-            2. Do not re-read files you have already read in this conversation unless there is a clear reason.
-            3. Batch tool calls when possible. Prefer reading multiple files in parallel rather than one at a time.
-            `);
+             ### Rules
+             1. Be decisive. Use \`glob\` and \`grep\` to find what is relevant, then read only the files you actually need. Do not scan the entire project unnecessarily.
+             2. Do not re-read files you have already read in this conversation unless there is a clear reason.
+             3. Batch tool calls when possible. Prefer reading multiple files in parallel rather than one at a time.
+             4. NEVER attempt to read, write, or access .env files or .env.* files. These are restricted for security reasons.
+             `);
     }
 
     if (cwd && mode === "BUILD") {
@@ -86,8 +87,9 @@ export function buildSystemPrompt({ cwd, mode }: SystemPromptParams): string {
             1. Be decisive. Use \`glob\` and \`grep\` to find what is relevant, then read only the files you actually need. Do not scan the entire project unnecessarily.
             2. Do not re-read files you have already read in this conversation unless there is a clear reason.
             3. Batch tool calls when possible. Prefer reading multiple files in parallel rather than one at a time.
-            4. Use \`editFile\` for small changes to existing files. Use \`writeFile\` only when creating new files or when rewriting most of a file.
-            `);
+             4. Use \`editFile\` for small changes to existing files. Use \`writeFile\` only when creating new files or when rewriting most of a file.
+             5. NEVER attempt to read, write, or access .env files or .env.* files. These are restricted for security reasons.
+             `);
     }
 
     return parts.join("\n");

@@ -287,7 +287,7 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
     const { colors } = useTheme();
     const navigate = useNavigate();
     const { pathname } = useLocation();
-    const { mode, toggleMode, setMode, setModel } = usePromptConfig();
+    const { mode, toggleMode, setMode, model, setModel } = usePromptConfig();
 
     const [activeMention, setActiveMention] = useState<MentionMatch | null>(null);
     const [mentionCandidates, setMentionCandidates] = useState<MentionCandidate[]>([]);
@@ -511,6 +511,7 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
                     pathname,
                     mode,
                     setMode,
+                    model,
                     setModel,
                 });
             } else {
@@ -858,33 +859,6 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
                     />
                     <box width={"100%"} flexDirection="row">
                         <StatusBar />
-                    </box>
-                    <box
-                        position="absolute"
-                        bottom={0}
-                        right={0}
-                        paddingRight={2}
-                        paddingBottom={1}
-                        flexDirection="row"
-                        flexWrap="wrap"
-                        gap={2}
-                    >
-                        <box flexDirection="row" gap={1}>
-                            <text selectable={false} attributes={TextAttributes.BOLD} fg={colors.primary}>
-                                enter
-                            </text>
-                            <text selectable={false} attributes={TextAttributes.DIM}>
-                                submit
-                            </text>
-                        </box>
-                        <box flexDirection="row" gap={1}>
-                            <text selectable={false} attributes={TextAttributes.BOLD} fg={colors.primary}>
-                                shift + enter
-                            </text>
-                            <text selectable={false} attributes={TextAttributes.DIM}>
-                                new line
-                            </text>
-                        </box>
                     </box>
                 </box>
             </box>

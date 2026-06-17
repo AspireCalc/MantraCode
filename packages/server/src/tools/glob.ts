@@ -1,6 +1,7 @@
-import { resolve, relative, isAbsolute } from "path";
+import { resolve, relative, isAbsolute, basename } from "path";
 import { tool } from "ai";
 import { z } from "zod";
+import { isEnvFilePath } from "./env-restriction";
 
 const MAX_RESULTS = 200;
 
@@ -33,6 +34,8 @@ export function createGlobTool(cwd: string) {
                     onlyFiles: true,
                 })) {
                     if (match.includes("node_modules")) continue;
+
+                    if (isEnvFilePath(resolve(resolved, match))) continue;
 
                     if (files.length >= MAX_RESULTS) {
                         truncated = true;

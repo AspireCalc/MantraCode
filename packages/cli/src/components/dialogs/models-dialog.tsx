@@ -6,9 +6,10 @@ import type { SupportedChatModelId } from "@mantracode/shared";
 type ModelsDialogContentProps = {
   models: SupportedChatModelId[];
   onSelectModel: (model: SupportedChatModelId) => void;
+  currentModel: SupportedChatModelId;
 };
 
-export const ModelsDialogContent = ({ models, onSelectModel }: ModelsDialogContentProps) => {
+export const ModelsDialogContent = ({ models, onSelectModel, currentModel }: ModelsDialogContentProps) => {
   const dialog = useDialog();
 
   const handleSelect = useCallback((modelId: SupportedChatModelId) => {
@@ -23,7 +24,7 @@ export const ModelsDialogContent = ({ models, onSelectModel }: ModelsDialogConte
       filterFn={(modelId, query) => modelId.toLowerCase().includes(query.toLowerCase())}
       renderItem={(modelId, isSelected) => (
         <text selectable={false} fg={isSelected ? "black" : "white"}>
-          {modelId}
+          {modelId === currentModel ? "• " : "  "}{modelId}
         </text>
       )}
       getkey={(modelId) => modelId}

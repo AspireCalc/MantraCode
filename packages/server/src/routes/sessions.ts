@@ -1,12 +1,13 @@
-import { Hono } from "hono";
-import { zValidator } from "@hono/zod-validator";
-// import { HTTPException } from "hono/http-exception";
-import * as Sentry from "@sentry/hono/bun";
 import { z } from "zod";
-import { findSupportedChatModel } from "@mantracode/shared";
+import { Hono } from "hono";
+import * as Sentry from "@sentry/hono/bun";
+import { zValidator } from "@hono/zod-validator";
 import { db } from "@mantracode/database/client";
-import { Role, Mode, MessageStatus } from "@mantracode/database/enums";
+import { isSupportedChatModel } from "../lib/models";
+// import { HTTPException } from "hono/http-exception";
 import type { AuthenticatedEnv } from "../middleware/require-auth";
+import { Role, Mode, MessageStatus } from "@mantracode/database/enums";
+import { requireCreditsBalance } from "../middleware/require-credits-balance";
 
 const createSessionSchema = z.object({
     title: z.string(),
@@ -16,7 +17,7 @@ const createSessionSchema = z.object({
             role: z.enum(Role),
             content: z.string(),
             mode: z.enum(Mode),
-            model: z.string().refine((id) => !!findSupportedChatModel(id), "Unsupported model"),
+            model: z.string().refine(isSupportedChatModel, "Unsupported model"),
 
         }).optional(),
 });
@@ -84,7 +85,17 @@ const app = new Hono<AuthenticatedEnv>()
 
         return c.json(session);
     })
-    .post("/", createSessionValidator, async (c) => {
+    .get("/:id/tokens", async (c) => {
+        const userId = c.get("userId");
+        const id = c.req.param("id");
+        const session = await db.session.findUnique({
+            where: { id, userId },
+            select: { totalTokens: true },
+        });
+        if (!session) return c.json({ error: "Session not found" }, 404);
+        return c.json(session);
+    })
+    .post("/", requireCreditsBalance, createSessionValidator, async (c) => {
         const userId = c.get("userId");
         const { initialMessage, ...data } = c.req.valid("json");
 
@@ -107,6 +118,14 @@ const app = new Hono<AuthenticatedEnv>()
             },
             include: { messages: true },
         });
+
+        if (session.title === "New Session" && session.messages.length > 0) {
+            const { nameSessionViaVertex: nameSession } = await import("./chat");
+            const userQuery = session.messages[0]?.content;
+            if (userQuery) {
+                nameSession(session.id, userQuery);
+            }
+        }
 
         Sentry.logger.info("Created session", {
             sessionId: session.id,
