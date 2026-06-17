@@ -2,6 +2,7 @@ import { resolve, relative, dirname, isAbsolute } from "path";
 import { writeFile, mkdir } from "fs/promises";
 import { tool } from "ai";
 import { z } from "zod";
+import { isEnvFilePath, envFileRestrictedError } from "./env-restriction";
 
 export function createWriteFileTool(cwd: string) {
     return tool({
@@ -16,6 +17,10 @@ export function createWriteFileTool(cwd: string) {
 
             if (rel.startsWith("..") || isAbsolute(rel)) {
                 return { error: "Path is outside the project directory" }
+            }
+
+            if (isEnvFilePath(resolved)) {
+                return envFileRestrictedError();
             }
 
             try {

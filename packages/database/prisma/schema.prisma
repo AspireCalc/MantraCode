@@ -29,13 +29,14 @@ enum MessageStatus {
 }
 
 model Session {
-  id        String    @id @default(cuid())
-  userId    String
-  title     String
-  cwd       String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  messages  Message[]
+  id          String    @id @default(cuid())
+  userId      String
+  title       String
+  cwd         String?
+  totalTokens Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  messages    Message[]
 
   @@index([userId])
 }

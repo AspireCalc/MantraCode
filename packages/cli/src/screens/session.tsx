@@ -82,6 +82,41 @@ function SessionChat({ session }: { session: SessionData }) {
     const { isTopLayer } = useKeyboardLayer();
     const [initialMessages] = useState(() => mapDbMessages(session.messages));
     const { messages, streaming, submit, abort, interrupt } = useChat(session.id, initialMessages);
+    const [totalTokens, setTotalTokens] = useState(session.totalTokens ?? 0);
+    const [creditsUsed, setCreditsUsed] = useState(0);
+    const [creditsTotal, setCreditsTotal] = useState(1000);
+
+    useEffect(() => {
+        const controller = new AbortController();
+        const { signal } = controller;
+        const fetch = async () => {
+            try {
+                const [tokensRes, creditsRes] = await Promise.all([
+                    apiClient.sessions[":id"].tokens.$get({ param: { id: session.id }, signal }),
+                    apiClient.billing.credits.$get({ signal }),
+                ]);
+                if (tokensRes.ok) {
+                    const data = await tokensRes.json();
+                    setTotalTokens(data.totalTokens);
+                }
+                if (creditsRes.ok) {
+                    const data = await creditsRes.json();
+                    setCreditsUsed(data.used);
+                    setCreditsTotal(data.total);
+                }
+            } catch (err) {
+                if (err instanceof Error && err.name !== "AbortError") {
+                    console.error("Failed to poll session data:", err);
+                }
+            }
+        };
+        fetch();
+        const interval = setInterval(fetch, 3000);
+        return () => {
+            clearInterval(interval);
+            controller.abort();
+        };
+    }, [session.id]);
 
     useEffect(() => {
         return () => { abort(); };
@@ -99,6 +134,9 @@ function SessionChat({ session }: { session: SessionData }) {
             onSubmit={(text) => submit({ userText: text, mode, model })}
             loading={streaming.status === "streaming"}
             interruptible={streaming.status === "streaming"}
+            totalTokens={totalTokens}
+            creditsUsed={creditsUsed}
+            creditsTotal={creditsTotal}
         >
             {[...messages, ...(streaming.status === "streaming" && streaming.parts.length > 0
                 ? [{ _key: "__streaming__" as const, parts: streaming.parts, model: streaming.model, mode: streaming.mode, displayText: streaming.displayText, displayedReasoningText: streaming.displayedReasoningText, displayedToolCallText: streaming.displayedToolCallText, reasoningText: streaming.reasoningText, reasoningGroups: streaming.reasoningGroups, toolCallText: streaming.toolCallText }]

@@ -32,6 +32,8 @@ export function createGrepTool(cwd: string) {
                     "--color=never",
                     "--exclude-dir=node_modules",
                     "--exclude-dir=.git",
+                    "--exclude=.env",
+                    "--exclude=.env.*",
                     "-E",
                 ];
 

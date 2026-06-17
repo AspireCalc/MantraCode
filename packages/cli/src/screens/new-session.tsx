@@ -43,7 +43,7 @@ export function NewSession() {
             try {
                 const res = await apiClient.sessions.$post({
                     json: {
-                        title: state.message.slice(0, 100),
+                        title: "New Session",
                         cwd: process.cwd(),
                         initialMessage: {
                             role: "USER",

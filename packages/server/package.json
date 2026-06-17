@@ -17,13 +17,16 @@
     "@ai-sdk/openai": "^3.0.70",
     "@ai-sdk/xai": "^3.0.94",
     "@clerk/backend": "^3.7.1",
+    "@google/genai": "^2.8.0",
     "@hono/zod-validator": "^0.8.0",
     "@mantracode/database": "workspace:*",
     "@mantracode/shared": "workspace:*",
+    "@polar-sh/sdk": "^0.48.1",
     "@sentry/bun": "^10.57.0",
     "@sentry/hono": "^10.57.0",
     "ai": "^6.0.202",
     "dotenv": "^17.4.2",
+    "google-auth-library": "^10.7.0",
     "hono": "^4.12.25",
     "zod": "^4.4.3"
   }

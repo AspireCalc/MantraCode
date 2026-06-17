@@ -6,7 +6,10 @@ const DEFAULT_TIMEOUT = 30_000;
 
 export function createBashTool(cwd: string) {
     return tool({
-        description: "Execute a shell command in the project directory. Use this for running tests, builds, git operations, package installs, and any other shell commands.",
+        // .env access cannot be programmatically blocked here because it would
+        // break legitimate shell operations like `source .env`. The system prompt
+        // prohibits this, and other tools have programmatic guards.
+        description: "Execute a shell command in the project directory. Use this for running tests, builds, git operations, package installs, and any other shell commands. Do NOT use this to read, write, or access .env files.",
         inputSchema: z.object({
             command: z.string().describe("The shell command to execute"),
             timeout: z

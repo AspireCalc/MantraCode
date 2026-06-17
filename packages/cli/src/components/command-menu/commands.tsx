@@ -2,6 +2,7 @@ import type { Command } from "./types";
 import { clearAuth } from "../../lib/auth";
 import { performLogin } from "../../lib/oauth";
 import { SUPPORTED_CHAT_MODELS } from "@mantracode/shared";
+import { openBillingPortal, openUpgradeCheckout } from "../../lib/upgrade";
 import { AgentsDialogContent, ModelsDialogContent, SessionDialogContent, ThemeDialogContent } from "../dialogs";
 
 export const COMMANDS: Command[] = [
@@ -39,7 +40,7 @@ export const COMMANDS: Command[] = [
         action: (ctx) => {
             ctx.dialog.open({
                 title: "Select Model",
-                children: <ModelsDialogContent models={SUPPORTED_CHAT_MODELS.map((model) => model.id)} onSelectModel={ctx.setModel} />
+                children: <ModelsDialogContent models={SUPPORTED_CHAT_MODELS.map((model) => model.id)} onSelectModel={ctx.setModel} currentModel={ctx.model} />
             })
         },
     },
@@ -95,16 +96,38 @@ export const COMMANDS: Command[] = [
         name: "upgrade",
         description: "Buy more credits",
         value: "/upgrade",
-        action: (ctx) => {
-            ctx.toast.show({ message: "Opening credits checkout..." })
+        action: async (ctx) => {
+            ctx.toast.show({ message: "Opening credits checkout..." });
+
+            try {
+                await openUpgradeCheckout();
+                ctx.toast.show({
+                    variant: "success",
+                    message: "Checkout opened in browser"
+                });
+            } catch (error) {
+                const message = error instanceof Error ? error.message : "Failed to open checkout";
+                ctx.toast.show({ variant: "error", message });
+            }
         },
     },
     {
         name: "usage",
         description: "Open billing portal in your browser",
         value: "/usage",
-        action: (ctx) => {
-            ctx.toast.show({ message: "Opening billing portal..." })
+        action: async (ctx) => {
+            ctx.toast.show({ message: "Opening billing portal..." });
+
+            try {
+                await openBillingPortal();
+                ctx.toast.show({
+                    variant: "success",
+                    message: "Billing portal opened in browser"
+                });
+            } catch (error) {
+                const message = error instanceof Error ? error.message : "Failed to open billing portal";
+                ctx.toast.show({ variant: "error", message });
+            }
         },
     },
     {

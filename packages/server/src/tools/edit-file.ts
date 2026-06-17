@@ -2,6 +2,7 @@ import { resolve, relative, isAbsolute } from "path";
 import { readFile, writeFile } from "fs/promises";
 import { tool } from "ai";
 import { z } from "zod";
+import { isEnvFilePath, envFileRestrictedError } from "./env-restriction";
 
 export function createEditFileTool(cwd: string) {
     return tool({
@@ -19,6 +20,10 @@ export function createEditFileTool(cwd: string) {
 
             if (rel.startsWith("..") || isAbsolute(rel)) {
                 return { error: "Path is outside the project directory" };
+            }
+
+            if (isEnvFilePath(resolved)) {
+                return envFileRestrictedError();
             }
 
             try {

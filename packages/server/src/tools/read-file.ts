@@ -2,6 +2,7 @@ import { resolve, relative } from "path";
 import { readFile } from "fs/promises";
 import { tool } from "ai";
 import { z } from "zod";
+import { isEnvFilePath, envFileRestrictedError } from "./env-restriction";
 
 const MAX_FILE_SIZE = 10_000;
 
@@ -21,6 +22,10 @@ export function createReadFileTool(cwd: string) {
 
             if (!resolved.startsWith(cwd)) {
                 return { error: "Path is outside the project directory" }
+            }
+
+            if (isEnvFilePath(resolved)) {
+                return envFileRestrictedError();
             }
 
             try {
