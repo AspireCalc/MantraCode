@@ -206,6 +206,7 @@ Default model: `gemini-3.5-flash`. Credits are calculated from token usage at a 
 | `POLAR_PRODUCT_ID` | Polar product ID for credit purchases | — |
 | `POLAR_CREDITS_METER_ID` | Polar credits meter ID for usage tracking | — |
 | `POLAR_SERVER` | Polar environment | `sandbox` |
+| `GOOGLE_SERVICE_ACCOUNT_KEY` | Google Cloud Service Account JSON key | - |
 
 ---
 

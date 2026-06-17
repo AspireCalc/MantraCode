@@ -1,3 +1,4 @@
+import { writeFileSync, mkdirSync } from "fs";
 import { Hono } from 'hono';
 import chat from "./routes/chat";
 import auth from "./routes/auth";
@@ -8,6 +9,13 @@ import * as Sentry from "@sentry/hono/bun";
 import { HTTPException } from 'hono/http-exception';
 import { requireAuth } from './middleware/require-auth';
 
+const saKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
+if (saKey && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  const dir = "/tmp/gcp-keys";
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(`${dir}/service-account.json`, saKey);
+  process.env.GOOGLE_APPLICATION_CREDENTIALS = `${dir}/service-account.json`;
+}
 
 const app = new Hono();
 
