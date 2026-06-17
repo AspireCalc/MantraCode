@@ -6,6 +6,7 @@ export const messagePartSchema = z.discriminatedUnion("type", [
     z.object({
         type: z.literal("reasoning"),
         text: z.string(),
+        durationMs: z.number().optional(),
     }),
     z.object({
         type: z.literal("tool-call"),

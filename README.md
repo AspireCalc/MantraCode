@@ -107,15 +107,17 @@ bun run dev:cli
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://...` |
 | `API_URL` | Server URL for the CLI client | `http://localhost:3000` |
-| `ANTHROPIC_API_KEY` | Anthropic API Key | — |
-| `OPENAI_API_KEY` | OpenAI API Key | — |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | Google generative AI API key | — |
-| `XAI_API_KEY` | xAI(grok) API key | — |
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://...` |
 | `GOOGLE_PROJECT_ID` | Google Project ID | — |
 | `GOOGLE_VERTEX_LOCATION` | Google Vertext Location | `global` |
 | `GOOGLE_VERTEX_PROJECT` | Google Vertext Project Name | — |
+| `CLERK_OAUTH_CLIENT_SECRET` | Clerk OAuth Client Secret | — |
+| `CLERK_OAUTH_CLIENT_ID` | Clerk OAuth Client ID | — |
+| `CLERK_FRONTEND_API` | Clerk frontend API | — |
+| `CLERK_SECRET_KEY` | Clerk Secret Key | — |
+| `CLERK_PUBLISHABLE_KEY` | Clerk Publishable Key | — |
+| `JWT_SECRET` | JWT Secret | `jwt-secret` |
 
 ---
 

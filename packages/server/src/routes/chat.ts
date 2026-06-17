@@ -2,7 +2,7 @@ import { z } from "zod";
 import { Hono } from "hono";
 import { createTools } from "../tools";
 import { streamSSE } from "hono/streaming";
-import { streamText as aiStreamText, stepCountIs } from "ai";
+import { streamText as aiStreamText, stepCountIs, type ToolSet } from "ai";
 import { zValidator } from "@hono/zod-validator";
 import { db } from "@mantracode/database/client";
 import type { Prisma } from "@mantracode/database";
@@ -11,6 +11,7 @@ import { Mode, MessageStatus } from "@mantracode/database/enums";
 import type { ChatStreamEvent, MessagePart } from "@mantracode/shared";
 import { isSupportedChatModel, resolveChatModel } from "../lib/models";
 import { toolCallArgsSchema, messagePartsSchema } from "@mantracode/shared";
+import type { AuthenticatedEnv } from "../middleware/require-auth";
 
 const submitSchema = z.object({
     content: z.string(),
@@ -71,6 +72,19 @@ function getResumableUserMessage(
 
 
 
+function isTrivialQuery(text: string): boolean {
+    const trimmed = text.trim().toLowerCase();
+    if (trimmed.length < 3) return true;
+    const normalized = trimmed.replace(/[.!?\s]+$/, "").trim();
+    const greetings = new Set([
+        "hey", "hi", "hello", "hii", "hey there", "hi there", "hello there",
+        "thanks", "thank you", "good", "ok", "yes", "no", "okay", "sure",
+        "great", "nice", "bye", "goodbye", "what's up", "how are you",
+        "howdy", "yo", "sup", "good morning", "good afternoon", "good evening",
+    ]);
+    return greetings.has(normalized);
+}
+
 type StreamParams = {
     sessionId: string;
     model: string;
@@ -82,17 +96,26 @@ type StreamParams = {
     mode: Mode;
     abortController: AbortController;
     streamState: StreamState;
+    tools?: ToolSet;
 };
 
 async function streamAIResponse(
     stream: Parameters<Parameters<typeof streamSSE>[1]>[0],
     params: StreamParams,
 ) {
-    const { sessionId, model, cwd, history, mode, abortController, streamState } = params;
+    const { sessionId, model, cwd, history, mode, abortController, streamState, tools } = params;
     const startTime = Date.now();
     const parts: MessagePart[] = [];
     const resolvedModel = resolveChatModel(model);
-    const tools = cwd ? createTools(cwd, mode) : undefined;
+    const providerOptions = tools ? resolvedModel.providerOptions : undefined;
+
+    function finalizeReasoningDuration(parts: MessagePart[], startTime: number) {
+        const elapsed = Date.now() - startTime;
+        const lastPart = parts[parts.length - 1];
+        if (lastPart?.type === "reasoning") {
+            lastPart.durationMs = elapsed;
+        }
+    }
 
     try {
         const result = aiStreamText({
@@ -102,13 +125,18 @@ async function streamAIResponse(
             abortSignal: abortController.signal,
             system: buildSystemPrompt({ cwd, mode }),
             stopWhen: tools ? stepCountIs(50) : undefined,
-            providerOptions: resolvedModel.providerOptions,
+            providerOptions,
         });
+
+        let reasoningGroupStartTime: number | null = null;
 
         for await (const part of result.fullStream) {
             if (stream.aborted) break;
 
             if (part.type === "reasoning-delta") {
+                if (reasoningGroupStartTime === null) {
+                    reasoningGroupStartTime = Date.now();
+                }
                 const last = parts[parts.length - 1];
                 if (last && last.type === "reasoning") {
                     last.text += part.text;
@@ -121,6 +149,10 @@ async function streamAIResponse(
             }
 
             if (part.type === "text-delta") {
+                if (reasoningGroupStartTime !== null) {
+                    finalizeReasoningDuration(parts, reasoningGroupStartTime);
+                    reasoningGroupStartTime = null;
+                }
                 const last = parts[parts.length - 1];
                 if (last && last.type === "text") {
                     last.text += part.text;
@@ -134,6 +166,10 @@ async function streamAIResponse(
             }
 
             if (part.type === "tool-call") {
+                if (reasoningGroupStartTime !== null) {
+                    finalizeReasoningDuration(parts, reasoningGroupStartTime);
+                    reasoningGroupStartTime = null;
+                }
                 const args = toolCallArgsSchema.parse(part.input);
 
                 parts.push({
@@ -174,6 +210,11 @@ async function streamAIResponse(
             if (part.type === "error") {
                 throw part.error;
             }
+        }
+
+        if (reasoningGroupStartTime !== null) {
+            finalizeReasoningDuration(parts, reasoningGroupStartTime);
+            reasoningGroupStartTime = null;
         }
 
         if (!stream.aborted && !abortController.signal.aborted) {
@@ -235,12 +276,13 @@ async function streamAIResponse(
     }
 };
 
-const app = new Hono()
+const app = new Hono<AuthenticatedEnv>()
     .post("/:sessionId/resume", async (c) => {
         const sessionId = c.req.param("sessionId");
+        const userId = c.get("userId");
 
         const session = await db.session.findUnique({
-            where: { id: sessionId },
+            where: { id: sessionId, userId },
             include: { messages: { orderBy: { createdAt: "asc" } } },
         });
 
@@ -260,6 +302,11 @@ const app = new Hono()
         if (activeStreamControllers.has(sessionId)) {
             return c.json({ error: "Session already has an active stream" }, 409);
         }
+
+        const resumeCwd = session.cwd;
+        const resumeQuery = session.messages.at(-1)?.content ?? "";
+        const needsTools = !isTrivialQuery(resumeQuery) && !!resumeCwd;
+        const tools = needsTools && resumeCwd ? createTools(resumeCwd, resumableMessage.mode) : undefined;
 
         const history = buildConversationHistory(session.messages);
         const abortController = new AbortController();
@@ -290,6 +337,7 @@ const app = new Hono()
                             cwd: session.cwd,
                             mode: resumableMessage.mode,
                             model: resumableMessage.model,
+                            tools,
                         });
                     } finally {
                         activeResumeSessionIds.delete(sessionId);
@@ -312,9 +360,10 @@ const app = new Hono()
     })
     .post("/:sessionId", submitValidator, async (c) => {
         const sessionId = c.req.param("sessionId");
+        const userId = c.get("userId");
 
         const session = await db.session.findUnique({
-            where: { id: sessionId },
+            where: { id: sessionId, userId },
             include: { messages: { orderBy: { createdAt: "asc" } } },
         });
 
@@ -344,6 +393,11 @@ const app = new Hono()
             },
         ]);
 
+        const submitCwd = session.cwd;
+        const query = data.content;
+        const needsTools = !isTrivialQuery(query) && !!submitCwd;
+        const tools = needsTools && submitCwd ? createTools(submitCwd, data.mode) : undefined;
+
         const abortController = new AbortController();
         const streamState: StreamState = {
             controller: abortController,
@@ -368,6 +422,7 @@ const app = new Hono()
                     mode: data.mode,
                     cwd: session.cwd,
                     model: data.model,
+                    tools,
                 });
             },
             async (err, stream) => {

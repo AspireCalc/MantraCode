@@ -1,3 +1,4 @@
+import { getMentionPattern } from "../input-bar";
 import { EmptyBorder } from "../border";
 import { useTheme } from "../../providers/theme";
 import { Mode } from "@mantracode/database/enums";
@@ -9,6 +10,20 @@ type Props = {
 
 export function UserMessage({ message, mode }: Props) {
     const { colors } = useTheme();
+    const parts: Array<{ text: string; isMention: boolean }> = [];
+    let lastIndex = 0;
+    const mentionPattern = getMentionPattern();
+    let match;
+    while ((match = mentionPattern.exec(message)) !== null) {
+        if (match.index > lastIndex) {
+            parts.push({ text: message.slice(lastIndex, match.index), isMention: false });
+        }
+        parts.push({ text: match[0], isMention: true });
+        lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < message.length) {
+        parts.push({ text: message.slice(lastIndex), isMention: false });
+    }
 
     return (
         <box width={"100%"} alignItems="center">
@@ -29,7 +44,17 @@ export function UserMessage({ message, mode }: Props) {
                     backgroundColor={colors.surface}
                     width={"100%"}
                 >
-                    <text>{message}</text>
+                    <text>
+                        {parts.length > 0
+                            ? parts.map((part, i) =>
+                                  part.isMention ? (
+                                      <em key={i} fg={colors.primary}>{part.text}</em>
+                                  ) : (
+                                      part.text
+                                  ),
+                              )
+                            : message}
+                    </text>
                 </box>
             </box>
         </box>
