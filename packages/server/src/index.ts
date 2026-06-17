@@ -1,5 +1,6 @@
 import { writeFileSync, mkdirSync } from "fs";
 import { Hono } from 'hono';
+import type { ServerWebSocket } from 'bun';
 import chat from "./routes/chat";
 import auth from "./routes/auth";
 import billing from "./routes/billing";
@@ -8,6 +9,8 @@ import { sentry } from '@sentry/hono/bun';
 import * as Sentry from "@sentry/hono/bun";
 import { HTTPException } from 'hono/http-exception';
 import { requireAuth } from './middleware/require-auth';
+import { authenticateOAuthRequest } from './lib/auth';
+import { registerConnection, removeConnection, handleToolResult } from './tunnel';
 
 const saKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
 if (saKey && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
@@ -77,4 +80,47 @@ const routes = app
 
 export type AppType = typeof routes;
 
-export default { port: 3000, fetch: app.fetch, idleTimeout: 255 };
+const fetchHandler: Parameters<typeof Bun.serve>[0]["fetch"] = (request, server) => {
+  const url = new URL(request.url);
+
+  if (url.pathname === "/ws/tunnel") {
+    return authenticateOAuthRequest(request).then((auth) => {
+      if (!auth) {
+        return new Response("Unauthorized", { status: 401 });
+      }
+
+      const upgraded = server.upgrade(request, {
+        data: { userId: auth.userId },
+      });
+
+      if (upgraded) return undefined;
+      return new Response("WebSocket upgrade failed", { status: 400 });
+    });
+  }
+
+  return app.fetch(request, server);
+};
+
+export default {
+  port: 3000,
+  fetch: fetchHandler,
+  idleTimeout: 255,
+  websocket: {
+    open(ws: ServerWebSocket<{ userId: string }>) {
+      registerConnection(ws.data.userId, ws);
+    },
+    message(ws: ServerWebSocket<{ userId: string }>, msg: string | Buffer) {
+      try {
+        const data = JSON.parse(msg.toString());
+        if (data.type === "tool-result" && data.id != null) {
+          handleToolResult(data.id, data.result);
+        }
+      } catch {
+        // Ignore invalid messages
+      }
+    },
+    close(ws: ServerWebSocket<{ userId: string }>) {
+      removeConnection(ws.data.userId);
+    },
+  },
+};

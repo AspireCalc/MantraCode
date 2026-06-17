@@ -5,6 +5,7 @@ import { RootLayout } from "./layouts/root-layout";
 import { Home } from "./screens/home";
 import { NewSession } from "./screens/new-session";
 import { Session } from "./screens/session";
+import { startTunnel } from "./lib/tunnel";
 
 const router = createMemoryRouter([
   {
@@ -27,3 +28,6 @@ const renderer = await createCliRenderer({
   exitOnCtrlC: false,
 });
 createRoot(renderer).render(<App />);
+
+// Establish WebSocket tunnel so server can proxy file tool execution to this machine
+startTunnel();

@@ -474,7 +474,7 @@ const app = new Hono<AuthenticatedEnv>()
         const resumeCwd = session.cwd;
         const resumeQuery = session.messages.at(-1)?.content ?? "";
         const needsTools = !isTrivialQuery(resumeQuery) && !!resumeCwd;
-        const tools = needsTools && resumeCwd ? createTools(resumeCwd, resumableMessage.mode) : undefined;
+        const tools = needsTools && resumeCwd ? createTools(resumeCwd, resumableMessage.mode, userId) : undefined;
 
         const history = buildConversationHistory(session.messages);
         const abortController = new AbortController();
@@ -578,7 +578,7 @@ const app = new Hono<AuthenticatedEnv>()
         const submitCwd = session.cwd;
         const query = data.content;
         const needsTools = !isTrivialQuery(query) && !!submitCwd;
-        const tools = needsTools && submitCwd ? createTools(submitCwd, data.mode) : undefined;
+        const tools = needsTools && submitCwd ? createTools(submitCwd, data.mode, userId) : undefined;
 
         const abortController = new AbortController();
         const streamState: StreamState = {
