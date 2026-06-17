@@ -12,7 +12,8 @@ export const requireCreditsBalance = createMiddleware<AuthenticatedEnv>(async (c
         }
 
         await next();
-    } catch {
+    } catch (err) {
+        console.error("Failed to verify credits balance:", err);
         return c.json({ error: "Unable to verify credits balance right now." }, 503);
     }
 });

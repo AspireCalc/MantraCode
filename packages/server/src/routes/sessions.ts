@@ -123,7 +123,7 @@ const app = new Hono<AuthenticatedEnv>()
             const { nameSessionViaVertex: nameSession } = await import("./chat");
             const userQuery = session.messages[0]?.content;
             if (userQuery) {
-                nameSession(session.id, userQuery);
+                nameSession(session.id, userQuery).catch((err) => console.error("Failed to name session:", err));
             }
         }
 

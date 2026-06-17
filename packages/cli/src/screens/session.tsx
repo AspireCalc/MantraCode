@@ -87,11 +87,13 @@ function SessionChat({ session }: { session: SessionData }) {
     const [creditsTotal, setCreditsTotal] = useState(1000);
 
     useEffect(() => {
-        const interval = setInterval(async () => {
+        const controller = new AbortController();
+        const { signal } = controller;
+        const fetch = async () => {
             try {
                 const [tokensRes, creditsRes] = await Promise.all([
-                    apiClient.sessions[":id"].tokens.$get({ param: { id: session.id } }),
-                    apiClient.billing.credits.$get(),
+                    apiClient.sessions[":id"].tokens.$get({ param: { id: session.id }, signal }),
+                    apiClient.billing.credits.$get({ signal }),
                 ]);
                 if (tokensRes.ok) {
                     const data = await tokensRes.json();
@@ -102,10 +104,18 @@ function SessionChat({ session }: { session: SessionData }) {
                     setCreditsUsed(data.used);
                     setCreditsTotal(data.total);
                 }
-            } catch { }
-        }, 3000);
-
-        return () => clearInterval(interval);
+            } catch (err) {
+                if (err instanceof Error && err.name !== "AbortError") {
+                    console.error("Failed to poll session data:", err);
+                }
+            }
+        };
+        fetch();
+        const interval = setInterval(fetch, 3000);
+        return () => {
+            clearInterval(interval);
+            controller.abort();
+        };
     }, [session.id]);
 
     useEffect(() => {

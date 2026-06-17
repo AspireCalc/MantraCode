@@ -39,7 +39,7 @@ MantraCode is structured as a TypeScript monorepo consisting of four packages:
 | **`@mantracode/database`** | Prisma schema, client, and migrations with PostgreSQL. |
 | **`@mantracode/shared`** | Shared types, Zod schemas, model definitions (with INR pricing), and custom SSE event protocol definitions. |
 
-```
+```text
                      ┌────────────────┐
                      │  MantraCode    │◀─── OAuth Success
                      │  CLI Client    │───┐ (Redirect loopback)
@@ -145,6 +145,7 @@ Default model: `gemini-3.5-flash`. Credits are calculated from token usage at a 
 ### Setup
 
 1. **Clone the repository**:
+
    ```bash
    git clone https://github.com/AspireCalc/MantraCode.git
    cd MantraCode
@@ -152,16 +153,19 @@ Default model: `gemini-3.5-flash`. Credits are calculated from token usage at a 
 
 2. **Configure Environment Variables**:
    Copy `.env.example` to `.env` and fill in your details:
+
    ```bash
    cp .env.example .env
    ```
 
 3. **Install Dependencies**:
+
    ```bash
    bun install
    ```
 
 4. **Prepare the Database**:
+
    ```bash
    # Generate Prisma client
    bun --cwd packages/database prisma generate
@@ -172,10 +176,12 @@ Default model: `gemini-3.5-flash`. Credits are calculated from token usage at a 
 
 5. **Run Applications**:
    Start the Hono API server:
+
    ```bash
    bun run dev:server
    ```
    In a separate terminal tab, run the CLI client:
+
    ```bash
    bun run dev:cli
    ```

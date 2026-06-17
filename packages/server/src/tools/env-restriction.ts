@@ -1,7 +1,7 @@
 import { basename } from "path";
 
 export function isEnvFilePath(resolvedPath: string): boolean {
-    const base = basename(resolvedPath);
+    const base = basename(resolvedPath).toLowerCase();
     return base === ".env" || base.startsWith(".env.");
 }
 

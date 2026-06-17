@@ -24,7 +24,7 @@ function getTokenCounts(usage: LanguageModelUsage): TokenCounts {
     const outputTokens = usage.outputTokens;
 
     if (inputTokens == null || outputTokens == null) {
-        throw new Error("Credit conversion require input and output token count");
+        throw new Error("Credit conversion requires input and output token count");
     }
 
     return {

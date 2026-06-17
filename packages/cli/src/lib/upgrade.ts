@@ -20,6 +20,7 @@ export async function openBillingPortal() {
     if (response.ok) {
         const data = await response.json();
         await open(data.url);
+        return;
     }
 
     throw new Error(await getErrorMessage(response));

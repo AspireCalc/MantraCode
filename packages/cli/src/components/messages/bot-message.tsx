@@ -255,7 +255,7 @@ export function BotMessage({
                 groupIdx: ri,
             });
             ri++;
-            i++;
+            while (i < parts.length && parts[i]!.type === "reasoning") i++;
         } else if (part.type === "text") {
             const seg = textSegments[ti]!;
             const isLast = ti === textSegments.length - 1;

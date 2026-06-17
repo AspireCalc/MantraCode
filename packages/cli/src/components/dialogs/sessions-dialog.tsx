@@ -140,37 +140,17 @@ export const SessionDialogContent = () => {
     }
   }, [close, show]);
 
-  const { entries, itemIds } = buildList(sessions, searchValue, currentSessionId);
+  const { entries } = buildList(sessions, searchValue, currentSessionId);
 
-  const filteredItemCount = itemIds.length;
-  const visibleHeight = Math.min(filteredItemCount + entries.filter(e => e.type === "header").length, MAX_VISIBLE_ITEMS);
+  const visibleHeight = Math.min(entries.length, MAX_VISIBLE_ITEMS);
 
   const handleContentChange = useCallback(() => {
     const text = inputRef.current?.value ?? "";
     setSearchValue(text);
-    setSelectedIndex(0);
+    const firstItemIndex = entries.findIndex(e => e.type === "item");
+    setSelectedIndex(firstItemIndex >= 0 ? firstItemIndex : 0);
     const sb = scrollRef.current;
     if (sb) sb.scrollTo(0);
-  }, []);
-
-  const resolveItemIndex = useCallback((listIndex: number): number | null => {
-    let itemIdx = 0;
-    for (let i = 0; i < entries.length; i++) {
-      if (entries[i]!.type === "header") continue;
-      if (i === listIndex) return itemIdx;
-      itemIdx++;
-    }
-    return null;
-  }, [entries]);
-
-  const resolveListIndex = useCallback((itemIndex: number): number | null => {
-    let itemIdx = 0;
-    for (let i = 0; i < entries.length; i++) {
-      if (entries[i]!.type === "header") continue;
-      if (itemIdx === itemIndex) return i;
-      itemIdx++;
-    }
-    return null;
   }, [entries]);
 
   useKeyboard((key) => {

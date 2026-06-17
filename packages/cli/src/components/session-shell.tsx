@@ -5,6 +5,7 @@ import { Spinner } from "./spinner";
 import { usePromptConfig } from "../providers/prompt-config";
 
 function formatCompact(n: number): string {
+    if (n < 0) n = 0;
     if (n < 1000) return String(n);
     if (n < 10000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "K";
     return Math.round(n / 1000) + "K";

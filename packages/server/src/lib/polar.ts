@@ -29,7 +29,7 @@ export function getPolarServer(): PolarServer {
     }
 
     if (server !== "sandbox" && server !== "production") {
-        throw new Error("POLAR_SERVER must be either 'sandbox' pr 'production'");
+        throw new Error("POLAR_SERVER must be either 'sandbox' or 'production'");
     }
 
     return server;
@@ -89,7 +89,7 @@ async function getCreditsMeter(customerExternalId: string): Promise<CreditsMeter
         const matchingMeters = customerState.activeMeters.filter((meter) => meter.meterId === getPolarCreditsMeterId());
 
         if (matchingMeters.length > 1) {
-            throw new Error("Expected exactly one matching Polar credits meter")
+            throw new Error("Expected exactly one matching Polar credits meter");
         }
 
         const creditsMeter = matchingMeters[0];

@@ -1,4 +1,4 @@
-import { resolve, relative, isAbsolute, basename } from "path";
+import { resolve, relative, isAbsolute } from "path";
 import { tool } from "ai";
 import { z } from "zod";
 import { isEnvFilePath } from "./env-restriction";
