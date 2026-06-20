@@ -71,6 +71,7 @@ jobs:
       - name: Build standalone binary
         shell: bash
         run: |
+          node packages/cli/scripts/generate-version.mjs
           bun build --compile \
             --target ${{ matrix.target }} \
             ./packages/cli/src/index.tsx \

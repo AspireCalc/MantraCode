@@ -133,6 +133,14 @@ printf '| |\\/| |/ _` | '"'"'_ \\| __| '"'"'__/ _` | |   / _ \\ / _` |/ _ \\\n'
 printf '| |  | | (_| | | | | |_| | | (_| | |__| (_) | (_| |  __/\n'
 printf '|_|  |_|\\__,_|_| |_|\\__|_|  \\__,_|\\____\\___/ \\__,_|\\___|\n'
 printf "${NC}\n"
+
+if command -v mantracode &>/dev/null; then
+  printf "${GREEN}MantraCode is already installed.${NC}\n"
+  printf "Run ${ORANGE}mantracode --version${NC} to check the current version.\n"
+  printf "Run ${ORANGE}mantracode${NC} to start.\n"
+  exit 0
+fi
+
 printf "${BLUE}Installing MantraCode...${NC}\n"
 printf "\n"
 

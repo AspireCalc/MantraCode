@@ -1,5 +1,41 @@
 #!/usr/bin/env bun
+import { existsSync, readFileSync, unlinkSync } from "fs";
+import { homedir } from "os";
+import { join } from "path";
 import dotenv from "dotenv";
 
 dotenv.config();
+
+const pkgPath = new URL("../package.json", import.meta.url);
+const { version } = JSON.parse(readFileSync(pkgPath, "utf-8"));
+process.env.MANTRACODE_VERSION = version;
+
+const args = process.argv.slice(2);
+
+if (args.includes("--version") || args.includes("-v")) {
+  console.log(`MantraCode v${version}`);
+  process.exit(0);
+}
+
+if (args.includes("logout")) {
+  const authFile = join(homedir(), ".mantracode", "auth.json");
+  try { unlinkSync(authFile); } catch { }
+  console.log("Signed out.");
+  process.exit(0);
+}
+
+if (args.includes("--uninstall")) {
+  const authDir = join(homedir(), ".mantracode");
+  try { unlinkSync(join(authDir, "auth.json")); } catch { }
+
+  try {
+    const { execSync } = await import("child_process");
+    execSync("npm uninstall -g @aspirenx/mantracode", { stdio: "inherit" });
+  } catch { }
+
+  const binaryPath = process.argv[1];
+  console.log(`MantraCode has been removed. Delete the binary at ${binaryPath} if it still exists.`);
+  process.exit(0);
+}
+
 await import("../dist/index.js");

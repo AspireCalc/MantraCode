@@ -1,3 +1,6 @@
+import { existsSync, unlinkSync, rmdirSync, readdirSync } from "fs";
+import { homedir } from "os";
+import { join } from "path";
 import { createCliRenderer } from "@opentui/core";
 import { createRoot } from "@opentui/react";
 import { createMemoryRouter, RouterProvider } from "react-router";
@@ -7,6 +10,34 @@ import { NewSession } from "./screens/new-session";
 import { Session } from "./screens/session";
 import { Profile } from "./screens/profile";
 import { startTunnel } from "./lib/tunnel";
+import { MANTRACODE_VERSION } from "./version";
+
+const args = process.argv.slice(2);
+
+if (args.includes("--version") || args.includes("-v")) {
+  console.log(`MantraCode v${MANTRACODE_VERSION}`);
+  process.exit(0);
+}
+
+if (args.includes("logout")) {
+  const authFile = join(homedir(), ".mantracode", "auth.json");
+  try { unlinkSync(authFile); } catch { }
+  console.log("Signed out.");
+  process.exit(0);
+}
+
+if (args.includes("--uninstall")) {
+  const authDir = join(homedir(), ".mantracode");
+  try { unlinkSync(join(authDir, "auth.json")); } catch { }
+
+  try {
+    const { execSync } = await import("child_process");
+    execSync("npm uninstall -g @aspirenx/mantracode", { stdio: "inherit" });
+  } catch { }
+
+  console.log("MantraCode has been removed from your machine.");
+  process.exit(0);
+}
 
 const router = createMemoryRouter([
   {
@@ -31,5 +62,4 @@ const renderer = await createCliRenderer({
 });
 createRoot(renderer).render(<App />);
 
-// Establish WebSocket tunnel so server can proxy file tool execution to this machine
 startTunnel();

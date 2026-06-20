@@ -8,9 +8,11 @@
     "dist",
     "bin"
   ],
+  "preferGlobal": true,
   "scripts": {
     "dev": "bun run --watch src/index.tsx",
-    "build": "bun build src/index.tsx --outdir dist --target bun",
+    "build": "bash scripts/build-cli.sh",
+    "preinstall": "node -e \"if(!process.env.npm_config_global){console.error();console.error('@aspirenx/mantracode can only be installed globally.');console.error();console.error('  npm install -g @aspirenx/mantracode');console.error();process.exit(1)}\"",
     "prepublish": "bun run build"
   },
   "devDependencies": {
