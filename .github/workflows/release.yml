@@ -1,0 +1,104 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to create (e.g., v1.0.1)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: bun-linux-x64
+            runner: ubuntu-latest
+            binary: mantracode-linux-x64
+          - target: bun-linux-arm64
+            runner: ubuntu-latest
+            binary: mantracode-linux-arm64
+          - target: bun-darwin-arm64
+            runner: macos-latest
+            binary: mantracode-darwin-arm64
+          - target: bun-darwin-x64
+            runner: macos-13
+            binary: mantracode-darwin-x64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: bun run --filter @mantracode/database db:generate
+        continue-on-error: true
+
+      - name: Build standalone binary
+        run: |
+          bun build --compile \
+            --target ${{ matrix.target }} \
+            ./packages/cli/src/index.tsx \
+            --outfile ${{ matrix.binary }}
+
+      - name: Upload binary as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.binary }}
+          path: ${{ matrix.binary }}
+          if-no-files-found: error
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all built binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: ./binaries
+          merge-multiple: true
+
+      - name: List binaries
+        run: ls -lh ./binaries/
+
+      - name: Determine tag
+        id: tag
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "name=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "name=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.tag.outputs.name }}"
+
+          # Create the release (or update if exists)
+          gh release create "$TAG" \
+            --title "MantraCode $TAG" \
+            --generate-notes \
+            ./binaries/* \
+            || gh release upload "$TAG" ./binaries/* --clobber

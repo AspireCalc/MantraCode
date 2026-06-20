@@ -118,7 +118,7 @@ export function Profile() {
                     height={1}
                     paddingX={2}
                 >
-                    <box onMouseDown={() => navigate("/")}>
+                    <box onMouseDown={() => navigate(-1)}>
                         <text
                             attributes={TextAttributes.BOLD}
                             fg={colors.primary}
