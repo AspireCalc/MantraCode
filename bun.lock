@@ -11,7 +11,7 @@
     },
     "packages/cli": {
       "name": "@aspirenx/mantracode",
-      "version": "1.0.0",
+      "version": "1.0.2",
       "bin": "./bin/mantracode",
       "dependencies": {
         "@ai-sdk/react": "^3.0.209",
@@ -34,6 +34,7 @@
       },
       "devDependencies": {
         "@aspirenx/mantracode-database": "workspace:*",
+        "@aspirenx/mantracode-server": "workspace:*",
         "@aspirenx/mantracode-shared": "workspace:*",
         "@types/bun": "latest",
         "@types/react": "^19.2.17",
@@ -57,6 +58,7 @@
     },
     "packages/server": {
       "name": "@aspirenx/mantracode-server",
+      "version": "1.0.0",
       "dependencies": {
         "@ai-sdk/anthropic": "^3.0.83",
         "@ai-sdk/google": "^3.0.81",
