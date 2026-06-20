@@ -70,6 +70,7 @@ app.use("/sessions/*", requireAuth);
 app.use("/chat/*", requireAuth);
 app.use("/billing/checkout", requireAuth);
 app.use("/billing/credits", requireAuth);
+app.use("/billing/me", requireAuth);
 app.use("/billing/portal", requireAuth);
 
 const routes = app

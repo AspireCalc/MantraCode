@@ -17,7 +17,7 @@ type TokenCounts = {
 };
 
 const TOKENS_PER_MILLION = 1_000_000;
-const INR_PER_CREDIT = 0.01;
+const INR_PER_CREDIT = 1.0;
 
 function getTokenCounts(usage: LanguageModelUsage): TokenCounts {
     const inputTokens = usage.inputTokens;

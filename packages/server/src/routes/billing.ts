@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { AuthenticatedEnv } from "../middleware/require-auth";
 import { createCheckoutUrl, createCustomerPortalUrl, getCreditsSummary } from "../lib/polar";
+import { clerkClient } from "../lib/auth";
 
 const ASCII_BANNER = `┌─────────────────────────────────────┐
 │          MantraCode CLI              │
@@ -101,6 +102,32 @@ const app = new Hono<AuthenticatedEnv>()
         const userId = c.get("userId");
         const credits = await getCreditsSummary(userId);
         return c.json(credits);
+    })
+    .get("/me", async (c) => {
+        const userId = c.get("userId");
+        if (!userId) {
+            return c.json({ error: "Not authenticated" }, 401);
+        }
+        const [user, credits] = await Promise.all([
+            clerkClient.users.getUser(userId).catch(() => null),
+            getCreditsSummary(userId).catch(() => ({ used: 0, total: 0 })),
+        ]);
+        return c.json({
+            user: user ? {
+                id: user.id,
+                email: user.emailAddresses[0]?.emailAddress ?? null,
+                name: [user.firstName, user.lastName].filter(Boolean).join(" ") || null,
+                username: user.username,
+                imageUrl: user.imageUrl,
+                createdAt: user.createdAt,
+                lastSignInAt: user.lastSignInAt,
+                lastActiveAt: user.lastActiveAt,
+                twoFactorEnabled: user.twoFactorEnabled,
+                passwordEnabled: user.passwordEnabled,
+                primaryEmailAddress: user.primaryEmailAddress?.emailAddress ?? null,
+            } : null,
+            credits,
+        });
     })
     .get("/success", (c) => c.html(htmlPage("Purchase Successful!", "<p>Your credits have been added to your account. You are now ready to use MantraCode.</p>", true)));
 

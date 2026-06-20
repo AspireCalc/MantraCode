@@ -8,7 +8,7 @@ if (!process.env.CLERK_PUBLISHABLE_KEY) {
     throw new Error("CLERK_PUBLISHABLE_KEY environment variable is required");
 }
 
-const clerkClient = createClerkClient({
+export const clerkClient = createClerkClient({
     secretKey: process.env.CLERK_SECRET_KEY,
     publishableKey: process.env.CLERK_PUBLISHABLE_KEY,
 });

@@ -112,6 +112,14 @@ export const COMMANDS: Command[] = [
         },
     },
     {
+        name: "profile",
+        description: "View your account profile and credits",
+        value: "/profile",
+        action: (ctx) => {
+            ctx.navigate("/profile");
+        },
+    },
+    {
         name: "usage",
         description: "Open billing portal in your browser",
         value: "/usage",
