@@ -1,6 +1,6 @@
 {
   "name": "@aspirenx/mantracode",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "module": "dist/index.js",
   "type": "module",
   "bin": "./bin/mantracode",
@@ -16,6 +16,7 @@
   "devDependencies": {
     "@aspirenx/mantracode-shared": "workspace:*",
     "@aspirenx/mantracode-database": "workspace:*",
+    "@aspirenx/mantracode-server": "workspace:*",
     "@types/bun": "latest",
     "@types/react": "^19.2.17"
   },
