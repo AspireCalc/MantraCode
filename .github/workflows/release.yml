@@ -64,7 +64,7 @@ jobs:
             fi
             echo "Downloading @opentui/core-${pkg}@0.2.10..."
             mkdir -p "$dir"
-            tarball_url="https://registry.npmjs.org/@opentui/core-${pkg}/-/opentui-core-${pkg}-0.2.10.tgz"
+            tarball_url="https://registry.npmjs.org/@opentui/core-${pkg}/-/core-${pkg}-0.2.10.tgz"
             curl -sS "$tarball_url" | tar -xz -C "$dir" --strip-components=1
           done
 

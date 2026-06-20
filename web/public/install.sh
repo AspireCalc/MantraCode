@@ -2,12 +2,121 @@
 set -euo pipefail
 
 REPO="AspireCalc/MantraCode"
+NPM_PACKAGE="@mantracode/cli"
 VERSION="${VERSION:-latest}"
 
 ORANGE='\033[38;5;208m'
 BLUE='\033[0;34m'
 GREEN='\033[0;32m'
 NC='\033[0m'
+
+# ──────────────────────────────────────────────
+# Methods (defined first, tried in order below)
+# ──────────────────────────────────────────────
+
+# Method A: Source install (last resort)
+source_install() {
+  local reason="$1"
+  printf "${ORANGE}${reason}${NC}\n"
+  printf "Falling back to source installation...\n\n"
+
+  if ! command -v bun &>/dev/null; then
+    printf "Installing Bun...\n"
+    curl -fsSL https://bun.sh/install | bash
+    export BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
+    export PATH="$BUN_INSTALL/bin:$PATH"
+  fi
+
+  local tmpdir
+  tmpdir="$(mktemp -d)"
+  printf "Cloning repository...\n"
+  git clone --depth 1 "https://github.com/${REPO}.git" "$tmpdir"
+  cd "$tmpdir"
+  DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" bun install
+  bun run build:cli
+  bun link
+  printf "${GREEN}MantraCode installed successfully via source!${NC}\n"
+  exit 0
+}
+
+# Method B: npm global install
+npm_install() {
+  if ! command -v npm &>/dev/null && ! command -v bun &>/dev/null; then
+    return 1
+  fi
+
+  printf "${BLUE}Installing via npm...${NC}\n"
+
+  local installer="npm"
+  if command -v bun &>/dev/null; then
+    installer="bun"
+  fi
+
+  if $installer install -g "$NPM_PACKAGE" 2>/dev/null; then
+    printf "${GREEN}MantraCode installed successfully via npm!${NC}\n\n"
+    printf "Run ${ORANGE}mantracode${NC} in any project directory to start.\n"
+    exit 0
+  fi
+
+  return 1
+}
+
+# Method C: Binary download from GitHub Releases
+binary_install() {
+  if [[ "$OS" == "windows" ]]; then
+    REMOTE_BINARY="mantracode-${OS}-${ARCH}.exe"
+    LOCAL_NAME="mantracode.exe"
+  else
+    REMOTE_BINARY="mantracode-${OS}-${ARCH}"
+    LOCAL_NAME="mantracode"
+  fi
+
+  local url="https://github.com/${REPO}/releases/${VERSION}/download/${REMOTE_BINARY}"
+  local tmpdir
+  tmpdir="$(mktemp -d)"
+  trap 'rm -rf "$tmpdir"' EXIT
+
+  printf "${BLUE}Downloading MantraCode for %s/%s...${NC}\n" "$OS" "$ARCH"
+
+  local http_code
+  if command -v curl &>/dev/null; then
+    http_code="$(curl -sS -w '%{http_code}' -o "${tmpdir}/${LOCAL_NAME}" "$url" 2>/dev/null)"
+  elif command -v wget &>/dev/null; then
+    http_code="$(wget -q -O "${tmpdir}/${LOCAL_NAME}" "$url" 2>/dev/null && echo "200" || echo "failed")"
+  else
+    return 1
+  fi
+
+  if [[ "$http_code" != "200" ]]; then
+    return 1
+  fi
+
+  local install_dir="${INSTALL_DIR:-/usr/local/bin}"
+  if [[ ! -w "$install_dir" ]]; then
+    install_dir="$HOME/.local/bin"
+    mkdir -p "$install_dir"
+  fi
+
+  chmod +x "${tmpdir}/${LOCAL_NAME}"
+  cp "${tmpdir}/${LOCAL_NAME}" "${install_dir}/${LOCAL_NAME}"
+
+  if command -v "$LOCAL_NAME" &>/dev/null; then
+    printf "${GREEN}MantraCode installed successfully!${NC}\n\n"
+    printf "Run ${ORANGE}mantracode${NC} in any project directory to start.\n"
+  else
+    printf "${GREEN}MantraCode installed to %s/%s${NC}\n" "$install_dir" "$LOCAL_NAME"
+    printf "\n"
+    printf "Make sure %s is in your PATH, then run ${ORANGE}mantracode${NC}.\n" "$install_dir"
+    if [[ "$OS" != "windows" ]]; then
+      printf "  export PATH=\"%s:\$PATH\"\n" "$install_dir"
+    fi
+  fi
+  exit 0
+}
+
+# ──────────────────────────────────────────────
+# Main
+# ──────────────────────────────────────────────
 
 printf "${ORANGE}"
 printf ' __  __             _              ____          _      \n'
@@ -19,7 +128,6 @@ printf "${NC}\n"
 printf "${BLUE}Installing MantraCode...${NC}\n"
 printf "\n"
 
-# ----- Detect OS / Arch -----
 detect_os() {
   local os
   os="$(uname -s)"
@@ -44,46 +152,12 @@ detect_arch() {
 OS="$(detect_os)"
 ARCH="$(detect_arch)"
 
-# Windows users can use install.ps1 (but bash also works via Git Bash / WSL)
 if [[ "$OS" == "windows" ]]; then
   printf "Tip: Windows users can also use the PowerShell installer:\n"
   printf "  irm https://mantracode.vercel.app/install.ps1 | iex\n\n"
 fi
 
-# Compose download URL and local filename
-if [[ "$OS" == "windows" ]]; then
-  REMOTE_BINARY="mantracode-${OS}-${ARCH}.exe"
-  BINARY_NAME="mantracode.exe"
-else
-  REMOTE_BINARY="mantracode-${OS}-${ARCH}"
-  BINARY_NAME="mantracode"
-fi
-
-DOWNLOAD_URL="https://github.com/${REPO}/releases/${VERSION}/download/${REMOTE_BINARY}"
-
-# ----- Source installation fallback -----
-source_install() {
-  local reason="$1"
-  printf "${ORANGE}${reason}${NC}\n"
-  printf "Falling back to source installation...\n\n"
-  if ! command -v bun &>/dev/null; then
-    printf "Installing Bun...\n"
-    curl -fsSL https://bun.sh/install | bash
-    export BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
-    export PATH="$BUN_INSTALL/bin:$PATH"
-  fi
-  local TEMP_DIR
-  TEMP_DIR="$(mktemp -d)"
-  printf "Cloning repository...\n"
-  git clone --depth 1 "https://github.com/${REPO}.git" "$TEMP_DIR"
-  cd "$TEMP_DIR"
-  DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" bun install
-  bun run build:cli
-  bun link
-  printf "${GREEN}MantraCode installed successfully via source!${NC}\n"
-  exit 0
-}
-
+# If OS or arch is unsupported, go straight to source install
 if [[ "$OS" == UNSUPPORTED:* ]]; then
   source_install "Unsupported OS: $(uname -s)"
 fi
@@ -91,48 +165,5 @@ if [[ "$ARCH" == UNSUPPORTED:* ]]; then
   source_install "Unsupported architecture: $(uname -m)"
 fi
 
-# ----- Determine install directory -----
-INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
-if [[ "$OS" == "windows" ]]; then
-  INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
-fi
-if [[ ! -w "$INSTALL_DIR" ]]; then
-  INSTALL_DIR="$HOME/.local/bin"
-  mkdir -p "$INSTALL_DIR"
-fi
-
-# ----- Download -----
-DOWNLOAD_DIR="$(mktemp -d)"
-trap 'rm -rf "$DOWNLOAD_DIR"' EXIT
-
-printf "${BLUE}Downloading MantraCode for %s/%s...${NC}\n" "$OS" "$ARCH"
-printf "\n"
-
-if command -v curl &>/dev/null; then
-  HTTP_CODE="$(curl -sS -w '%{http_code}' -o "${DOWNLOAD_DIR}/${BINARY_NAME}" "$DOWNLOAD_URL" 2>/dev/null)"
-elif command -v wget &>/dev/null; then
-  HTTP_CODE="$(wget -q -O "${DOWNLOAD_DIR}/${BINARY_NAME}" "$DOWNLOAD_URL" 2>/dev/null && echo "200" || echo "failed")"
-else
-  printf "${ORANGE}Neither curl nor wget found. Please install one of them.${NC}\n"
-  exit 1
-fi
-
-if [[ "$HTTP_CODE" != "200" ]]; then
-  source_install "Failed to download binary (HTTP ${HTTP_CODE}). The pre-built binary may not be available for your platform yet."
-fi
-
-# ----- Install -----
-chmod +x "${DOWNLOAD_DIR}/${BINARY_NAME}"
-cp "${DOWNLOAD_DIR}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
-
-if command -v "$BINARY_NAME" &>/dev/null; then
-  printf "${GREEN}MantraCode installed successfully!${NC}\n\n"
-  printf "Run ${ORANGE}mantracode${NC} in any project directory to start.\n"
-else
-  printf "${GREEN}MantraCode installed to %s/%s${NC}\n" "$INSTALL_DIR" "$BINARY_NAME"
-  printf "\n"
-  printf "Make sure %s is in your PATH, then run ${ORANGE}mantracode${NC}.\n" "$INSTALL_DIR"
-  if [[ "$OS" != "windows" ]]; then
-    printf "  export PATH=\"%s:\$PATH\"\n" "$INSTALL_DIR"
-  fi
-fi
+# Try methods in order: binary → npm → source
+binary_install || npm_install || source_install "Could not download pre-built binary. Trying alternative methods..."

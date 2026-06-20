@@ -1,6 +1,9 @@
 "use client";
 
-const INSTALL_CMD = "curl -fsSL https://mantracode.vercel.app/install.sh | sh";
+import { useState } from "react";
+
+const UNIX_CMD = "curl -fsSL https://mantracode.vercel.app/install.sh | sh";
+const WINDOWS_CMD = "irm https://mantracode.vercel.app/install.ps1 | iex";
 const GITHUB_URL = "https://github.com/AspireCalc/MantraCode";
 
 function Code({ children }: { children: string }) {
@@ -80,7 +83,7 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row items-center gap-4 mt-10">
             <button
               onClick={() => {
-                navigator.clipboard.writeText(INSTALL_CMD);
+                navigator.clipboard.writeText(UNIX_CMD);
                 const el = document.getElementById("copy-feedback");
                 if (el) {
                   el.textContent = "Copied!";
@@ -405,44 +408,11 @@ export default function Home() {
           <span className="text-[#FF651D]">one command</span>
         </SectionTitle>
         <SectionSubtitle>
-          Works on macOS and Linux. Requires Bun — the install script handles
+          Works on macOS, Linux, and Windows. The install script handles
           everything.
         </SectionSubtitle>
 
-        <div className="mt-12 rounded-xl border border-white/10 bg-[#181820] overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3 border-b border-white/5">
-            <span className="text-xs text-[#A1A1AA] font-mono">Terminal</span>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(INSTALL_CMD);
-                const el = document.getElementById("copy-cmd-feedback");
-                if (el) {
-                  el.textContent = "Copied!";
-                  setTimeout(() => (el.textContent = "Copy"), 1500);
-                }
-              }}
-              className="text-xs text-[#A1A1AA] hover:text-white transition-colors"
-            >
-              <span id="copy-cmd-feedback">Copy</span>
-            </button>
-          </div>
-          <div className="p-5 font-mono text-sm">
-            <p>
-              <span className="text-[#A1A1AA]">$ </span>
-              <span className="text-white">{INSTALL_CMD}</span>
-            </p>
-            <p className="mt-2 text-[#A1A1AA]">
-              <span className="text-green-400">#</span> Then run:
-            </p>
-            <p className="text-white">
-              <span className="text-[#A1A1AA]">$ </span>mantracode
-            </p>
-            <p className="mt-3 text-xs text-[#A1A1AA] border-t border-white/5 pt-3">
-              <span className="text-purple-400">Windows:</span>{" "}
-              irm https://mantracode.vercel.app/install.ps1 | iex
-            </p>
-          </div>
-        </div>
+        <InstallTerminalBox />
 
         <div className="mt-8 rounded-xl border border-white/10 bg-[#181820] p-5">
           <h3 className="font-semibold text-sm mb-2">Prerequisites</h3>
@@ -623,6 +593,78 @@ export default function Home() {
         </div>
       </footer>
     </>
+  );
+}
+
+function InstallTerminalBox() {
+  const [tab, setTab] = useState<"unix" | "windows">("unix");
+  const [copied, setCopied] = useState(false);
+
+  const cmd = tab === "unix" ? UNIX_CMD : WINDOWS_CMD;
+  const prompt = tab === "unix" ? "$" : "PS>";
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(cmd);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <div className="mt-12 rounded-xl border border-white/10 bg-[#181820] overflow-hidden">
+      {/* Terminal header with tabs and copy button */}
+      <div className="flex items-center justify-between px-5 border-b border-white/5 bg-[#0E0E12]">
+        <div className="flex">
+          <button
+            onClick={() => setTab("unix")}
+            className={`px-4 py-3 text-xs font-mono border-b-2 transition-colors ${
+              tab === "unix"
+                ? "text-[#FF651D] border-[#FF651D]"
+                : "text-[#A1A1AA] border-transparent hover:text-white"
+            }`}
+          >
+            macOS & Linux
+          </button>
+          <button
+            onClick={() => setTab("windows")}
+            className={`px-4 py-3 text-xs font-mono border-b-2 transition-colors ${
+              tab === "windows"
+                ? "text-[#FF651D] border-[#FF651D]"
+                : "text-[#A1A1AA] border-transparent hover:text-white"
+            }`}
+          >
+            Windows
+          </button>
+        </div>
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1.5 px-3 py-1.5 mr-2 text-xs text-[#A1A1AA] hover:text-white transition-colors"
+        >
+          <svg
+            className="w-3.5 h-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          {copied ? "Copied!" : "Copy"}
+        </button>
+      </div>
+
+      {/* Command display */}
+      <div className="p-5 font-mono text-sm">
+        <p>
+          <span className="text-[#A1A1AA]">{prompt} </span>
+          <span className="text-white">{cmd}</span>
+        </p>
+        <p className="mt-3 text-[#A1A1AA] text-xs border-t border-white/5 pt-3">
+          <span className="text-green-400">#</span> Then run{" "}
+          <span className="text-white">mantracode</span> in any project
+          directory.
+        </p>
+      </div>
+    </div>
   );
 }
 
