@@ -7,14 +7,14 @@ import { useToast } from "../providers/toast";
 import type { InferResponseType } from "hono";
 import { useEffect, useMemo, useState } from "react";
 import { getErrorMessage } from "../lib/https-errors";
-import { MessageStatus } from "@mantracode/database/enums";
+import { MessageStatus } from "@aspirenx/mantracode-database/enums";
 import { SessionShell } from "../components/session-shell";
 import { usePromptConfig } from "../providers/prompt-config";
 import { useKeyboardLayer } from "../providers/keyboard-layer";
 import { useLocation, useNavigate, useParams } from "react-router";
 import type { ClientMessagePart, Message } from "../hooks/use-chat";
 import { BotMessage, ErrorMessage, UserMessage } from "../components/messages";
-import { messagePartsSchema, type SupportedChatModelId } from "@mantracode/shared";
+import { messagePartsSchema, type SupportedChatModelId } from "@aspirenx/mantracode-shared";
 
 type SessionData = InferResponseType<typeof apiClient.sessions[":id"]["$get"], 200>;
 

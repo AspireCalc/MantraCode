@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { useToast } from "../providers/toast";
 import { apiClient } from "../lib/api-client";
-import { Mode } from "@mantracode/database/enums";
+import { Mode } from "@aspirenx/mantracode-database/enums";
 import { useEffect, useMemo, useRef } from "react";
 import { UserMessage } from "../components/messages";
 import { getErrorMessage } from "../lib/https-errors";

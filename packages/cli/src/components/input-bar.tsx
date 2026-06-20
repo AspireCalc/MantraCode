@@ -6,7 +6,7 @@ import { useToast } from "../providers/toast";
 import { useTheme } from "../providers/theme";
 import { useDialog } from "../providers/dialog";
 import type { KeyBinding, ScrollBoxRenderable } from "@opentui/core";
-import { Mode } from "@mantracode/database/enums";
+import { Mode } from "@aspirenx/mantracode-database/enums";
 import type { Command } from "./command-menu/types";
 import { useNavigate, useLocation } from "react-router";
 import { useRenderer, useKeyboard } from "@opentui/react";

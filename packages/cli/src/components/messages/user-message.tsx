@@ -1,7 +1,7 @@
 import { getMentionPattern } from "../input-bar";
 import { EmptyBorder } from "../border";
 import { useTheme } from "../../providers/theme";
-import { Mode } from "@mantracode/database/enums";
+import { Mode } from "@aspirenx/mantracode-database/enums";
 
 type Props = {
     message: string;

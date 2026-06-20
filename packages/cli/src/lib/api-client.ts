@@ -1,5 +1,5 @@
 import { hc } from "hono/client";
-import type { AppType } from "@mantracode/server";
+import type { AppType } from "@aspirenx/mantracode-server";
 import { clearAuth, getAuth } from "./auth";
 
 export const apiClient = hc<AppType>(process.env.API_URL ?? "http://localhost:3000", {

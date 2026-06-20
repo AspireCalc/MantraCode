@@ -1,15 +1,15 @@
 {
-  "name": "@mantracode/cli",
+  "name": "@aspirenx/mantracode",
+  "version": "1.0.0",
   "module": "src/index.tsx",
   "type": "module",
-  "private": true,
   "bin": "./bin/mantracode",
   "scripts": {
     "dev": "bun run --watch src/index.tsx",
     "build": "bun build src/index.tsx --outdir dist --target bun"
   },
   "devDependencies": {
-    "@mantracode/shared": "workspace:*",
+    "@aspirenx/mantracode-shared": "workspace:*",
     "@types/bun": "latest",
     "@types/react": "^19.2.17"
   },
@@ -18,8 +18,8 @@
   },
   "dependencies": {
     "@ai-sdk/react": "^3.0.209",
-    "@mantracode/database": "workspace:*",
-    "@mantracode/shared": "workspace:*",
+    "@aspirenx/mantracode-database": "workspace:*",
+    "@aspirenx/mantracode-shared": "workspace:*",
     "@opentui/core": "^0.2.10",
     "@opentui/react": "^0.2.10",
     "ai": "^6.0.207",
@@ -35,5 +35,8 @@
     "react-router": "^7.17.0",
     "tty-table": "^5.0.0",
     "zod": "^4.4.3"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -1,12 +1,15 @@
 {
-  "name": "@mantracode/shared",
+  "name": "@aspirenx/mantracode-shared",
+  "version": "1.0.0",
   "type": "module",
-  "private": true,
   "exports": {
     ".": "./src/index.ts"
   },
   "dependencies": {
     "ai": "^6.0.207",
     "zod": "^4.4.3"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

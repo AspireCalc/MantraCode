@@ -1,4 +1,4 @@
-import type { Mode } from "@mantracode/database/enums";
+import type { Mode } from "@aspirenx/mantracode-database/enums";
 
 type SystemPromptParams = {
     cwd: string | null;

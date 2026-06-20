@@ -1,4 +1,4 @@
-import type { Mode } from "@mantracode/database/enums";
+import type { Mode } from "@aspirenx/mantracode-database/enums";
 import type { ToolSet } from "ai";
 import { proxyToolCall } from "../tunnel";
 import { createReadFileTool } from "./read-file";

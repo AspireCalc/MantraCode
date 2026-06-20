@@ -1,5 +1,5 @@
 {
-  "name": "@mantracode/server",
+  "name": "@aspirenx/mantracode-server",
   "type": "module",
   "private": true,
   "exports": {
@@ -19,8 +19,8 @@
     "@clerk/backend": "^3.7.1",
     "@google/genai": "^2.8.0",
     "@hono/zod-validator": "^0.8.0",
-    "@mantracode/database": "workspace:*",
-    "@mantracode/shared": "workspace:*",
+    "@aspirenx/mantracode-database": "workspace:*",
+    "@aspirenx/mantracode-shared": "workspace:*",
     "@polar-sh/sdk": "^0.48.1",
     "@sentry/bun": "^10.57.0",
     "@sentry/hono": "^10.57.0",

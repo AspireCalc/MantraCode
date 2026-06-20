@@ -1,5 +1,5 @@
 import type { LanguageModelUsage } from "ai";
-import { SUPPORTED_CHAT_MODELS, findSupportedChatModel, type ModelPricing } from "@mantracode/shared";
+import { SUPPORTED_CHAT_MODELS, findSupportedChatModel, type ModelPricing } from "@aspirenx/mantracode-shared";
 
 type CalculateCreditsForUsageParams = {
     provider: string;

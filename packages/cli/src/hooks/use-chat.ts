@@ -4,8 +4,8 @@ import prettyMs from "pretty-ms";
 import type { ClientResponse } from "hono/client";
 import { apiClient } from "../lib/api-client";
 import { getErrorMessage } from "../lib/https-errors";
-import type { Mode } from "@mantracode/database/enums";
-import { chatStreamEventSchema, type SupportedChatModelId } from "@mantracode/shared";
+import type { Mode } from "@aspirenx/mantracode-database/enums";
+import { chatStreamEventSchema, type SupportedChatModelId } from "@aspirenx/mantracode-shared";
 
 const REVEAL_CHARS_PER_TICK = 4;
 const REVEAL_TICK_MS = 16;

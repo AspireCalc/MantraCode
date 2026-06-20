@@ -1,12 +1,12 @@
 import { createVertex } from "@ai-sdk/google-vertex";
 import { createVertexAnthropic } from "@ai-sdk/google-vertex/anthropic";
 
-import { findSupportedChatModel } from "@mantracode/shared";
+import { findSupportedChatModel } from "@aspirenx/mantracode-shared";
 import type {
     SupportedChatModel,
     SupportedChatModelId,
     SupportedProvider,
-} from "@mantracode/shared";
+} from "@aspirenx/mantracode-shared";
 
 import type { LanguageModel } from "ai";
 import type { ProviderOptions } from "@ai-sdk/provider-utils";

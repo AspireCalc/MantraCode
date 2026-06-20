@@ -1,7 +1,7 @@
-import type { Mode } from "@mantracode/database/enums";
+import type { Mode } from "@aspirenx/mantracode-database/enums";
 import type { DialogContextValue } from "../../providers/dialog";
 import type { ToastContextValue } from "../../providers/toast";
-import type { SupportedChatModelId } from "@mantracode/shared";
+import type { SupportedChatModelId } from "@aspirenx/mantracode-shared";
 
 export type CommandContext = {
     exit: () => void;

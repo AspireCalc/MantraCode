@@ -1,14 +1,65 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-const UNIX_CMD = "curl -fsSL https://mantracode.vercel.app/install.sh | sh";
-const WINDOWS_CMD = "irm https://mantracode.vercel.app/install.ps1 | iex";
+const UNIX_CMD =
+  "curl -fsSL https://mantracode.vercel.app/install.sh | sh";
+const WINDOWS_CMD =
+  "irm https://mantracode.vercel.app/install.ps1 | iex";
 const GITHUB_URL = "https://github.com/AspireCalc/MantraCode";
+const THEME_STORAGE_KEY = "mantracode-theme";
+
+// Inject hero grid CSS once on the client — no separate CSS file needed.
+// Two sets of rules handle light and dark themes via data-theme attribute.
+if (typeof document !== "undefined") {
+  const id = "mantracode-hero-grid-style";
+  if (!document.getElementById(id)) {
+    const style = document.createElement("style");
+    style.id = id;
+    style.textContent = `
+      .hero-grid {
+        background-color: var(--bg);
+        background-image:
+          linear-gradient(rgba(120,120,120,0.10) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(120,120,120,0.10) 1px, transparent 1px);
+        background-size: 48px 48px;
+      }
+      [data-theme="dark"] .hero-grid {
+        background-image:
+          linear-gradient(rgba(255,255,255,0.055) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,0.055) 1px, transparent 1px);
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
+
+type Theme = "light" | "dark";
+
+function getPreferredTheme(): Theme {
+  if (typeof window === "undefined") return "light";
+
+  try {
+    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+    if (storedTheme === "light" || storedTheme === "dark") {
+      return storedTheme;
+    }
+  } catch {}
+
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+}
+
+function applyTheme(theme: Theme) {
+  if (typeof document !== "undefined") {
+    document.documentElement.setAttribute("data-theme", theme);
+  }
+}
 
 function Code({ children }: { children: string }) {
   return (
-    <code className="bg-[var(--bg-tertiary)] text-[#FF651D] px-2 py-0.5 rounded text-sm font-mono">
+    <code className="bg-(--bg-tertiary) text-mantra px-2 py-0.5 rounded text-sm font-mono">
       {children}
     </code>
   );
@@ -24,60 +75,234 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 function SectionSubtitle({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[var(--text-muted)] text-center mt-4 text-lg max-w-2xl mx-auto">
+    <p className="text-(--text-muted) text-center mt-4 text-lg max-w-2xl mx-auto">
       {children}
     </p>
   );
 }
 
+// Compact inline pill shown in the hero — just the unix command + copy.
+// No tabs, no chrome. Scannable at a glance.
+function HeroCommandPill() {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(UNIX_CMD);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      aria-label="Copy install command"
+      className="group mt-8 flex items-center gap-3 rounded-lg border border-(--border) bg-(--bg-secondary) px-4 py-2.5 text-sm font-mono shadow-sm hover:border-mantra/40 transition-all duration-200 w-full max-w-3xl text-left"
+    >
+      <span className="text-mantra select-none shrink-0">$</span>
+      <span className="flex-1 text-(--text-bold) truncate">{UNIX_CMD}</span>
+      <span className="shrink-0 flex items-center gap-1 text-xs text-(--text-muted) group-hover:text-mantra transition-colors">
+        {copied ? (
+          <>
+            <svg
+              className="w-3.5 h-3.5 text-green-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+            <span className="text-green-400">Copied!</span>
+          </>
+        ) : (
+          <>
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            Copy
+          </>
+        )}
+      </span>
+    </button>
+  );
+}
+
+// Full tabbed terminal box — lives only in the #install section.
+function InstallTerminalBox() {
+  const [tab, setTab] = useState<"unix" | "windows">("unix");
+  const [copied, setCopied] = useState(false);
+
+  const cmd = tab === "unix" ? UNIX_CMD : WINDOWS_CMD;
+  const prompt = tab === "unix" ? "$" : "PS>";
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(cmd);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <div className="mt-10 rounded-xl border border-(--border) bg-(--bg-secondary) overflow-hidden">
+      <div className="flex items-center justify-between px-5 border-b border-(--border-subtle) bg-(--bg)">
+        <div className="flex">
+          <button
+            onClick={() => setTab("unix")}
+            className={`px-4 py-3 text-xs font-mono border-b-2 transition-colors ${
+              tab === "unix"
+                ? "text-mantra border-mantra"
+                : "text-(--text-muted) border-transparent hover:text-(--text-bold)"
+            }`}
+          >
+            macOS & Linux
+          </button>
+          <button
+            onClick={() => setTab("windows")}
+            className={`px-4 py-3 text-xs font-mono border-b-2 transition-colors ${
+              tab === "windows"
+                ? "text-mantra border-mantra"
+                : "text-(--text-muted) border-transparent hover:text-(--text-bold)"
+            }`}
+          >
+            Windows
+          </button>
+        </div>
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1.5 px-3 py-1.5 mr-2 text-xs text-(--text-muted) hover:text-(--text-bold) transition-colors"
+        >
+          <svg
+            className="w-3.5 h-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          {copied ? "Copied!" : "Copy"}
+        </button>
+      </div>
+      <div className="p-5 font-mono text-sm">
+        <p>
+          <span className="text-(--text-muted)">{prompt} </span>
+          <span className="text-(--text-bold)">{cmd}</span>
+        </p>
+        <p className="mt-3 text-(--text-muted) text-xs border-t border-(--border-subtle) pt-3">
+          <span className="text-green-400">#</span> Then run{" "}
+          <span className="text-(--text-bold)">mantracode</span> in any project
+          directory.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function FeatureCard({
+  icon,
+  title,
+  description,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: React.ReactNode;
+}) {
+  return (
+    <div className="group rounded-xl border border-(--border-subtle) bg-(--bg-secondary) p-5 hover:border-mantra/20 hover:bg-(--bg-hover) transition-all duration-300">
+      <div className="w-9 h-9 rounded-lg bg-mantra/10 border border-mantra/20 flex items-center justify-center text-mantra mb-3 group-hover:bg-mantra/15 transition-colors">
+        {icon}
+      </div>
+      <h3 className="font-semibold text-sm mb-2 text-(--text-bold)">{title}</h3>
+      <p className="text-(--text-muted) text-sm leading-relaxed">{description}</p>
+    </div>
+  );
+}
+
 export default function Home() {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [theme, setTheme] = useState<Theme>("light");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const initialTheme = getPreferredTheme();
+    setTheme(initialTheme);
+    applyTheme(initialTheme);
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    applyTheme(theme);
+
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch {}
+  }, [theme, mounted]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+    const handleSystemThemeChange = (event: MediaQueryListEvent) => {
+      try {
+        const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+        if (storedTheme === "light" || storedTheme === "dark") return;
+      } catch {}
+
+      const nextTheme: Theme = event.matches ? "dark" : "light";
+      setTheme(nextTheme);
+      applyTheme(nextTheme);
+    };
+
+    mediaQuery.addEventListener("change", handleSystemThemeChange);
+    return () =>
+      mediaQuery.removeEventListener("change", handleSystemThemeChange);
+  }, []);
 
   const toggleTheme = () => {
-    const next = theme === "light" ? "dark" : "light";
-    setTheme(next);
-    document.documentElement.setAttribute("data-theme", next);
+    setTheme((current) => (current === "light" ? "dark" : "light"));
   };
 
   return (
     <>
       {/* NAV */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-nav backdrop-blur-md border-b border-[var(--border-subtle)]">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-nav backdrop-blur-md border-b border-(--border-subtle)">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <span className="font-bold text-lg tracking-tight">
-            <span className="text-[#FF651D]">Mantra</span>Code
+            <span className="text-mantra">Mantra</span>Code
           </span>
-          <div className="flex items-center gap-6 text-sm text-[var(--text-muted)]">
-            <a
-              href="#features"
-              className="hover:text-[var(--text-bold)] transition-colors"
-            >
+          <div className="flex items-center gap-6 text-sm text-(--text-muted)">
+            <a href="#features" className="hover:text-(--text-bold) transition-colors">
               Features
             </a>
-            <a
-              href="#install"
-              className="hover:text-[var(--text-bold)] transition-colors"
-            >
+            <a href="#install" className="hover:text-(--text-bold) transition-colors">
               Install
             </a>
-            <a
-              href="#commands"
-              className="hover:text-[var(--text-bold)] transition-colors"
-            >
+            <a href="#commands" className="hover:text-(--text-bold) transition-colors">
               Commands
             </a>
             <a
               href={GITHUB_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-[var(--text-bold)] transition-colors"
+              className="hover:text-(--text-bold) transition-colors"
             >
               GitHub
             </a>
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg hover:bg-[var(--overlay)] transition-colors text-[var(--text-muted)] hover:text-[var(--text-bold)]"
-              aria-label="Toggle theme"
+              className="p-2 rounded-lg hover:bg-(--overlay) transition-colors text-(--text-muted) hover:text-(--text-bold)"
+              aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
             >
               {theme === "light" ? (
                 <svg
@@ -106,54 +331,36 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* HERO — grid lives here only */}
-      <section
-        className="min-h-screen flex flex-col items-center justify-center px-6 pt-20 pb-24 relative overflow-hidden"
-        style={{
-          backgroundImage: `
-            linear-gradient(var(--grid-line) 1px, transparent 1px),
-            linear-gradient(90deg, var(--grid-line) 1px, transparent 1px)
-          `,
-          backgroundSize: "48px 48px",
-        }}
-      >
-        {/* Grid fade-out mask: fades grid toward bottom so content sections below look clean */}
+      {/* HERO — grid background only on this section */}
+      <section className="hero-grid min-h-screen flex flex-col items-center justify-center px-6 pt-20 pb-24 relative overflow-hidden">
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="absolute inset-0 pointer-events-none z-1"
           style={{
             background:
-              "radial-gradient(ellipse 80% 60% at 50% 0%, transparent 40%, var(--bg) 100%)",
+              "radial-gradient(ellipse 100% 80% at 50% 10%, transparent 30%, var(--bg, #ffffff) 75%)",
           }}
         />
-        {/* Subtle orange glow at top center */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-[#FF651D]/6 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-175 h-90 bg-mantra/6 rounded-full blur-3xl pointer-events-none z-2" />
 
-        <div className="relative z-10 flex flex-col items-center text-center max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[var(--border)] bg-[var(--overlay)] text-sm text-[var(--text-muted)] mb-8">
-            <span className="w-2 h-2 rounded-full bg-[#FF651D] animate-pulse" />
+        <div className="relative z-3 flex flex-col items-center text-center max-w-3xl">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-(--border) bg-(--overlay) text-sm text-(--text-muted) mb-8">
+            <span className="w-2 h-2 rounded-full bg-mantra animate-pulse" />
             v1.0.0 — Agentic AI in Your Terminal
           </div>
 
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
-            <span className="text-[#FF651D]">Mantra</span>Code
+            <span className="text-mantra">Mantra</span>Code
           </h1>
-          <p className="text-xl sm:text-2xl text-[var(--text-muted)] mt-4 max-w-xl">
-            An agentic AI coding assistant that runs entirely inside your
-            terminal.
+          <p className="text-xl sm:text-2xl text-(--text-muted) mt-4 max-w-xl">
+            An agentic AI coding assistant that runs entirely inside your terminal.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 mt-10">
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(UNIX_CMD);
-                const el = document.getElementById("copy-feedback");
-                if (el) {
-                  el.textContent = "Copied!";
-                  setTimeout(() => (el.textContent = "Copy Install Command"), 1500);
-                }
-              }}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#FF651D] text-white font-semibold hover:bg-[#FF8A4D] transition-colors text-sm"
+            <a
+              href="#install"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-mantra text-white font-semibold hover:bg-mantra-light transition-colors text-sm"
             >
+              Get Started
               <svg
                 className="w-4 h-4"
                 fill="none"
@@ -161,15 +368,18 @@ export default function Home() {
                 stroke="currentColor"
                 strokeWidth={2}
               >
-                <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M17 8l4 4m0 0l-4 4m4-4H3"
+                />
               </svg>
-              <span id="copy-feedback">Copy Install Command</span>
-            </button>
+            </a>
             <a
               href={GITHUB_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-[var(--border)] text-[var(--text-bold)] font-semibold hover:bg-[var(--overlay)] transition-colors text-sm"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-(--border) text-(--text-bold) font-semibold hover:bg-(--overlay) transition-colors text-sm"
             >
               <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
                 <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
@@ -177,36 +387,37 @@ export default function Home() {
               View on GitHub
             </a>
           </div>
+
+          <HeroCommandPill />
         </div>
 
-        {/* TERMINAL MOCKUP */}
-        <div className="relative z-10 mt-16 w-full max-w-3xl">
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] overflow-hidden shadow-2xl">
-            <div className="flex items-center gap-1.5 px-4 py-3 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+        <div className="relative z-3 mt-16 w-full max-w-3xl">
+          <div className="rounded-xl border border-(--border) bg-(--bg) overflow-hidden shadow-2xl">
+            <div className="flex items-center gap-1.5 px-4 py-3 border-b border-(--border-subtle) bg-(--bg-secondary)">
               <span className="w-3 h-3 rounded-full bg-red-500/80" />
               <span className="w-3 h-3 rounded-full bg-yellow-500/80" />
               <span className="w-3 h-3 rounded-full bg-green-500/80" />
-              <span className="ml-3 text-xs text-[var(--text-muted)] font-mono">
+              <span className="ml-3 text-xs text-(--text-muted) font-mono">
                 mantracode
               </span>
             </div>
             <div className="p-5 font-mono text-sm leading-relaxed">
               <p>
                 <span className="text-green-400">user</span>
-                <span className="text-[var(--text-muted)]">@</span>
-                <span className="text-[#FF651D]">workspace</span>
-                <span className="text-[var(--text-muted)]"> $ </span>
-                <span className="text-[var(--text-bold)]">mantracode</span>
+                <span className="text-(--text-muted)">@</span>
+                <span className="text-mantra">workspace</span>
+                <span className="text-(--text-muted)"> $ </span>
+                <span className="text-(--text-bold)">mantracode</span>
               </p>
-              <p className="mt-2 text-[var(--text-muted)]">
-                <span className="text-[#FF651D]">●</span> MantraCode v1.0.0
+              <p className="mt-2 text-(--text-muted)">
+                <span className="text-mantra">●</span> MantraCode v1.0.0
               </p>
-              <p className="text-[var(--text-muted)]">
+              <p className="text-(--text-muted)">
                 <span className="text-purple-400">●</span> Mode: BUILD
               </p>
               <p className="mt-3">
-                <span className="text-[var(--text-bold)]">Ask anything...</span>
-                <span className="animate-pulse text-[#FF651D]">▊</span>
+                <span className="text-(--text-bold)">Ask anything...</span>
+                <span className="animate-pulse text-mantra">▊</span>
               </p>
             </div>
           </div>
@@ -214,17 +425,13 @@ export default function Home() {
       </section>
 
       {/* FEATURES */}
-      <section
-        id="features"
-        className="px-6 py-24 max-w-6xl mx-auto scroll-mt-20"
-      >
+      <section id="features" className="px-6 py-24 max-w-6xl mx-auto scroll-mt-20">
         <SectionTitle>
           Everything a developer needs, in one{" "}
-          <span className="text-[#FF651D]">terminal</span>
+          <span className="text-mantra">terminal</span>
         </SectionTitle>
         <SectionSubtitle>
-          Dual agent modes, multiple AI models, file tooling, session history,
-          and more — no context switching.
+          Dual agent modes, multiple AI models, file tooling, session history, and more — no context switching.
         </SectionSubtitle>
 
         <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -248,8 +455,8 @@ export default function Home() {
             description={
               <>
                 <Code>PLAN</Code> mode for read-only context discovery (search,
-                read, grep). <Code>BUILD</Code> mode for full code generation
-                and file modification.
+                read, grep). <Code>BUILD</Code> mode for full code generation and
+                file modification.
               </>
             }
           />
@@ -416,7 +623,7 @@ export default function Home() {
       {/* HOW IT WORKS */}
       <section className="px-6 py-24 max-w-6xl mx-auto">
         <SectionTitle>
-          How it <span className="text-[#FF651D]">works</span>
+          How it <span className="text-mantra">works</span>
         </SectionTitle>
         <SectionSubtitle>
           From install to productivity in under a minute.
@@ -446,13 +653,11 @@ export default function Home() {
             },
           ].map((item) => (
             <div key={item.step} className="text-center">
-              <div className="w-12 h-12 rounded-xl bg-[#FF651D]/10 border border-[#FF651D]/20 flex items-center justify-center mx-auto mb-4">
-                <span className="text-[#FF651D] font-bold text-sm">
-                  {item.step}
-                </span>
+              <div className="w-12 h-12 rounded-xl bg-mantra/10 border border-mantra/20 flex items-center justify-center mx-auto mb-4">
+                <span className="text-mantra font-bold text-sm">{item.step}</span>
               </div>
               <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-              <p className="text-[var(--text-muted)] text-sm leading-relaxed">
+              <p className="text-(--text-muted) text-sm leading-relaxed">
                 {item.desc}
               </p>
             </div>
@@ -461,66 +666,57 @@ export default function Home() {
       </section>
 
       {/* INSTALL */}
-      <section
-        id="install"
-        className="px-6 py-24 max-w-3xl mx-auto scroll-mt-20"
-      >
+      <section id="install" className="px-6 py-24 max-w-3xl mx-auto scroll-mt-20">
         <SectionTitle>
-          Get started in{" "}
-          <span className="text-[#FF651D]">one command</span>
+          Get started in <span className="text-mantra">one command</span>
         </SectionTitle>
         <SectionSubtitle>
           Works on macOS, Linux, and Windows. The install script handles
           everything.
         </SectionSubtitle>
 
-        {/* Install command box — was missing before */}
         <InstallTerminalBox />
 
-        <div className="mt-8 rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] p-5">
+        <div className="mt-8 rounded-xl border border-(--border) bg-(--bg-secondary) p-5">
           <h3 className="font-semibold text-sm mb-2">Prerequisites</h3>
-          <ul className="text-sm text-[var(--text-muted)] space-y-1.5">
+          <ul className="text-sm text-(--text-muted) space-y-1.5">
             <li className="flex items-start gap-2">
-              <span className="text-[#FF651D] mt-0.5">▸</span>
-              macOS 12+, Linux, or Windows (x86_64 / arm64)
+              <span className="text-mantra mt-0.5">▸</span>macOS 12+, Linux, or
+              Windows (x86_64 / arm64)
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-[#FF651D] mt-0.5">▸</span>
-              Git (for repository-based workflows)
+              <span className="text-mantra mt-0.5">▸</span>Git (for
+              repository-based workflows)
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-[#FF651D] mt-0.5">▸</span>
-              A Google Vertex AI project (for cloud-hosted models)
+              <span className="text-mantra mt-0.5">▸</span>A Google Vertex AI
+              project (for cloud-hosted models)
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-[#FF651D] mt-0.5">▸</span>
-              50MB free disk space
+              <span className="text-mantra mt-0.5">▸</span>50MB free disk space
             </li>
           </ul>
         </div>
       </section>
 
       {/* CLI COMMANDS */}
-      <section
-        id="commands"
-        className="px-6 py-24 max-w-4xl mx-auto scroll-mt-20"
-      >
+      <section id="commands" className="px-6 py-24 max-w-4xl mx-auto scroll-mt-20">
         <SectionTitle>
-          <span className="text-[#FF651D]">Slash</span> Commands
+          <span className="text-mantra">Slash</span> Commands
         </SectionTitle>
         <SectionSubtitle>
-          Everything you need at your fingertips. Press{" "}
-          <Code>/</Code> in the input bar to open the command menu.
+          Everything you need at your fingertips. Press <Code>/</Code> in the
+          input bar to open the command menu.
         </SectionSubtitle>
 
-        <div className="mt-12 rounded-xl border border-[var(--border)] overflow-hidden">
+        <div className="mt-12 rounded-xl border border-(--border) overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
-                <th className="text-left px-5 py-3 font-semibold text-[var(--text-muted)]">
+              <tr className="border-b border-(--border-subtle) bg-(--bg-secondary)">
+                <th className="text-left px-5 py-3 font-semibold text-(--text-muted)">
                   Command
                 </th>
-                <th className="text-left px-5 py-3 font-semibold text-[var(--text-muted)]">
+                <th className="text-left px-5 py-3 font-semibold text-(--text-muted)">
                   Description
                 </th>
               </tr>
@@ -542,12 +738,10 @@ export default function Home() {
               ].map(([cmd, desc]) => (
                 <tr
                   key={cmd}
-                  className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-[var(--overlay-hover)] transition-colors"
+                  className="border-b border-(--border-subtle) last:border-0 hover:bg-(--overlay-hover) transition-colors"
                 >
-                  <td className="px-5 py-3 font-mono text-[#FF651D]">
-                    {cmd}
-                  </td>
-                  <td className="px-5 py-3 text-[var(--text-muted)]">{desc}</td>
+                  <td className="px-5 py-3 font-mono text-mantra">{cmd}</td>
+                  <td className="px-5 py-3 text-(--text-muted)">{desc}</td>
                 </tr>
               ))}
             </tbody>
@@ -558,24 +752,24 @@ export default function Home() {
       {/* MODELS */}
       <section className="px-6 py-24 max-w-4xl mx-auto">
         <SectionTitle>
-          Supported <span className="text-[#FF651D]">Models</span>
+          Supported <span className="text-mantra">Models</span>
         </SectionTitle>
         <SectionSubtitle>
           Powered by Google Vertex AI — each model with native thinking and
           reasoning support.
         </SectionSubtitle>
 
-        <div className="mt-12 rounded-xl border border-[var(--border)] overflow-hidden">
+        <div className="mt-12 rounded-xl border border-(--border) overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
-                <th className="text-left px-5 py-3 font-semibold text-[var(--text-muted)]">
+              <tr className="border-b border-(--border-subtle) bg-(--bg-secondary)">
+                <th className="text-left px-5 py-3 font-semibold text-(--text-muted)">
                   Model
                 </th>
-                <th className="text-left px-5 py-3 font-semibold text-[var(--text-muted)]">
+                <th className="text-left px-5 py-3 font-semibold text-(--text-muted)">
                   Type
                 </th>
-                <th className="text-left px-5 py-3 font-semibold text-[var(--text-muted)]">
+                <th className="text-left px-5 py-3 font-semibold text-(--text-muted)">
                   Pricing (per 1M tokens)
                 </th>
               </tr>
@@ -591,21 +785,23 @@ export default function Home() {
               ].map(([model, type, price]) => (
                 <tr
                   key={model}
-                  className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-[var(--overlay-hover)] transition-colors"
+                  className="border-b border-(--border-subtle) last:border-0 hover:bg-(--overlay-hover) transition-colors"
                 >
-                  <td className="px-5 py-3 font-medium text-[var(--text-bold)]">{model}</td>
+                  <td className="px-5 py-3 font-medium text-(--text-bold)">
+                    {model}
+                  </td>
                   <td className="px-5 py-3">
                     <span
                       className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                         type === "Pro"
                           ? "bg-purple-500/10 text-purple-400 border border-purple-500/20"
-                          : "bg-[#FF651D]/10 text-[#FF651D] border border-[#FF651D]/20"
+                          : "bg-mantra/10 text-mantra border border-mantra/20"
                       }`}
                     >
                       {type}
                     </span>
                   </td>
-                  <td className="px-5 py-3 text-[var(--text-muted)] font-mono">
+                  <td className="px-5 py-3 text-(--text-muted) font-mono">
                     {price}
                   </td>
                 </tr>
@@ -616,23 +812,23 @@ export default function Home() {
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t border-[var(--border-subtle)] px-6 py-12">
+      <footer className="border-t border-(--border-subtle) px-6 py-12">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
-            <span className="font-bold text-[var(--text-bold)]">
-              <span className="text-[#FF651D]">Mantra</span>Code
+          <div className="flex items-center gap-2 text-sm text-(--text-muted)">
+            <span className="font-bold text-(--text-bold)">
+              <span className="text-mantra">Mantra</span>Code
             </span>
             <span>·</span>
             <span>Built by Nishant Chauhan</span>
             <span>·</span>
             <span>© {new Date().getFullYear()} AspireNX</span>
           </div>
-          <div className="flex items-center gap-4 text-sm text-[var(--text-muted)]">
+          <div className="flex items-center gap-4 text-sm text-(--text-muted)">
             <a
               href={GITHUB_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-[var(--text-bold)] transition-colors"
+              className="hover:text-(--text-bold) transition-colors"
             >
               GitHub
             </a>
@@ -640,7 +836,7 @@ export default function Home() {
               href={`${GITHUB_URL}/issues`}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-[var(--text-bold)] transition-colors"
+              className="hover:text-(--text-bold) transition-colors"
             >
               Issues
             </a>
@@ -648,7 +844,7 @@ export default function Home() {
               href={`${GITHUB_URL}/releases`}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-[var(--text-bold)] transition-colors"
+              className="hover:text-(--text-bold) transition-colors"
             >
               Releases
             </a>
@@ -656,97 +852,5 @@ export default function Home() {
         </div>
       </footer>
     </>
-  );
-}
-
-function InstallTerminalBox() {
-  const [tab, setTab] = useState<"unix" | "windows">("unix");
-  const [copied, setCopied] = useState(false);
-
-  const cmd = tab === "unix" ? UNIX_CMD : WINDOWS_CMD;
-  const prompt = tab === "unix" ? "$" : "PS>";
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(cmd);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-
-  return (
-    <div className="mt-10 rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] overflow-hidden">
-      {/* Terminal header with tabs and copy button */}
-      <div className="flex items-center justify-between px-5 border-b border-[var(--border-subtle)] bg-[var(--bg)]">
-        <div className="flex">
-          <button
-            onClick={() => setTab("unix")}
-            className={`px-4 py-3 text-xs font-mono border-b-2 transition-colors ${
-              tab === "unix"
-                ? "text-[#FF651D] border-[#FF651D]"
-                : "text-[var(--text-muted)] border-transparent hover:text-[var(--text-bold)]"
-            }`}
-          >
-            macOS & Linux
-          </button>
-          <button
-            onClick={() => setTab("windows")}
-            className={`px-4 py-3 text-xs font-mono border-b-2 transition-colors ${
-              tab === "windows"
-                ? "text-[#FF651D] border-[#FF651D]"
-                : "text-[var(--text-muted)] border-transparent hover:text-[var(--text-bold)]"
-            }`}
-          >
-            Windows
-          </button>
-        </div>
-        <button
-          onClick={handleCopy}
-          className="flex items-center gap-1.5 px-3 py-1.5 mr-2 text-xs text-[var(--text-muted)] hover:text-[var(--text-bold)] transition-colors"
-        >
-          <svg
-            className="w-3.5 h-3.5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
-          {copied ? "Copied!" : "Copy"}
-        </button>
-      </div>
-
-      {/* Command display */}
-      <div className="p-5 font-mono text-sm">
-        <p>
-          <span className="text-[var(--text-muted)]">{prompt} </span>
-          <span className="text-[var(--text-bold)]">{cmd}</span>
-        </p>
-        <p className="mt-3 text-[var(--text-muted)] text-xs border-t border-[var(--border-subtle)] pt-3">
-          <span className="text-green-400">#</span> Then run{" "}
-          <span className="text-[var(--text-bold)]">mantracode</span> in any project
-          directory.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function FeatureCard({
-  icon,
-  title,
-  description,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: React.ReactNode;
-}) {
-  return (
-    <div className="group rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-5 hover:border-[#FF651D]/20 hover:bg-[var(--bg-hover)] transition-all duration-300">
-      <div className="w-9 h-9 rounded-lg bg-[#FF651D]/10 border border-[#FF651D]/20 flex items-center justify-center text-[#FF651D] mb-3 group-hover:bg-[#FF651D]/15 transition-colors">
-        {icon}
-      </div>
-      <h3 className="font-semibold text-sm mb-2 text-[var(--text-bold)]">{title}</h3>
-      <p className="text-[var(--text-muted)] text-sm leading-relaxed">{description}</p>
-    </div>
   );
 }

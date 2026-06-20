@@ -1,7 +1,7 @@
 import { useDialog } from "../../providers/dialog";
 import { DialogSearchList } from "../dialog-search-list";
 import { useCallback } from "react";
-import type { SupportedChatModelId } from "@mantracode/shared";
+import type { SupportedChatModelId } from "@aspirenx/mantracode-shared";
 
 type ModelsDialogContentProps = {
   models: SupportedChatModelId[];

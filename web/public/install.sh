@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO="AspireCalc/MantraCode"
-NPM_PACKAGE="@mantracode/cli"
+NPM_PACKAGE="@aspirenx/mantracode"
 VERSION="${VERSION:-latest}"
 
 ORANGE='\033[38;5;208m'

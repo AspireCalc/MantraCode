@@ -1,7 +1,7 @@
 import type { Command } from "./types";
 import { clearAuth } from "../../lib/auth";
 import { performLogin } from "../../lib/oauth";
-import { SUPPORTED_CHAT_MODELS } from "@mantracode/shared";
+import { SUPPORTED_CHAT_MODELS } from "@aspirenx/mantracode-shared";
 import { openBillingPortal, openUpgradeCheckout } from "../../lib/upgrade";
 import { AgentsDialogContent, ModelsDialogContent, SessionDialogContent, ThemeDialogContent } from "../dialogs";
 

@@ -1,7 +1,7 @@
 import { useDialog } from "../../providers/dialog";
 import { DialogSearchList } from "../dialog-search-list";
 import { useCallback } from "react";
-import { Mode } from "@mantracode/database/enums";
+import { Mode } from "@aspirenx/mantracode-database/enums";
 
 const AVAILABLE_MODES: Mode[] = [Mode.BUILD, Mode.PLAN];
 

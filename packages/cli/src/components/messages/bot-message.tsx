@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Mode } from "@mantracode/database/enums";
+import { Mode } from "@aspirenx/mantracode-database/enums";
 import type {
     ClientMessagePart,
     ClientToolCallPart,

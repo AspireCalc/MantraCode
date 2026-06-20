@@ -2,11 +2,11 @@ import { z } from "zod";
 import { Hono } from "hono";
 import * as Sentry from "@sentry/hono/bun";
 import { zValidator } from "@hono/zod-validator";
-import { db } from "@mantracode/database/client";
+import { db } from "@aspirenx/mantracode-database/client";
 import { isSupportedChatModel } from "../lib/models";
 // import { HTTPException } from "hono/http-exception";
 import type { AuthenticatedEnv } from "../middleware/require-auth";
-import { Role, Mode, MessageStatus } from "@mantracode/database/enums";
+import { Role, Mode, MessageStatus } from "@aspirenx/mantracode-database/enums";
 import { requireCreditsBalance } from "../middleware/require-credits-balance";
 
 const createSessionSchema = z.object({

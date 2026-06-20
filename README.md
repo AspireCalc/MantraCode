@@ -34,10 +34,10 @@ MantraCode is structured as a TypeScript monorepo consisting of four packages:
 
 | Package | Description |
 |---------|-------------|
-| **`@mantracode/cli`** | The main user-facing application — an interactive React-based TUI built on OpenTUI. |
-| **`@mantracode/server`** | Hono HTTP API server powering the backend, managing streams, and invoking agentic tools. |
-| **`@mantracode/database`** | Prisma schema, client, and migrations with PostgreSQL. |
-| **`@mantracode/shared`** | Shared types, Zod schemas, model definitions (with INR pricing), and custom SSE event protocol definitions. |
+| **`@aspirenx/mantracode`** | The main user-facing application — an interactive React-based TUI built on OpenTUI. |
+| **`@aspirenx/mantracode-server`** | Hono HTTP API server powering the backend, managing streams, and invoking agentic tools. |
+| **`@aspirenx/mantracode-database`** | Prisma schema, client, and migrations with PostgreSQL. |
+| **`@aspirenx/mantracode-shared`** | Shared types, Zod schemas, model definitions (with INR pricing), and custom SSE event protocol definitions. |
 
 ```text
                      ┌────────────────┐

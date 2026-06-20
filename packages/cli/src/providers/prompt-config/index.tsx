@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback } from "react";
 import type { ReactNode } from "react";
-import { DEFAULT_CHAT_MODEL_ID, type SupportedChatModelId } from "@mantracode/shared";
-import { Mode } from "@mantracode/database/enums";
+import { DEFAULT_CHAT_MODEL_ID, type SupportedChatModelId } from "@aspirenx/mantracode-shared";
+import { Mode } from "@aspirenx/mantracode-database/enums";
 
 type PromptConfigContextValue = {
     mode: Mode;
