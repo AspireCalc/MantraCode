@@ -3,7 +3,6 @@ set -euo pipefail
 
 REPO="AspireCalc/MantraCode"
 VERSION="${VERSION:-latest}"
-BINARY_NAME="mantracode"
 
 ORANGE='\033[38;5;208m'
 BLUE='\033[0;34m'
@@ -20,32 +19,52 @@ printf "${NC}\n"
 printf "${BLUE}Installing MantraCode...${NC}\n"
 printf "\n"
 
+# ----- Detect OS / Arch -----
+detect_os() {
+  local os
+  os="$(uname -s)"
+  case "$os" in
+    Darwin)  echo "darwin" ;;
+    Linux)   echo "linux" ;;
+    MINGW*|MSYS*|CYGWIN*) echo "windows" ;;
+    *)       echo "UNSUPPORTED:$os" ;;
+  esac
+}
+
 detect_arch() {
   local arch
   arch="$(uname -m)"
   case "$arch" in
     x86_64|amd64) echo "x86_64" ;;
     aarch64|arm64) echo "arm64" ;;
-    *) echo "UNSUPPORTED:$arch" ;;
-  esac
-}
-
-detect_os() {
-  local os
-  os="$(uname -s)"
-  case "$os" in
-    Darwin) echo "darwin" ;;
-    Linux) echo "linux" ;;
-    *) echo "UNSUPPORTED:$os" ;;
+    *)            echo "UNSUPPORTED:$arch" ;;
   esac
 }
 
 OS="$(detect_os)"
 ARCH="$(detect_arch)"
-DOWNLOAD_URL="https://github.com/${REPO}/releases/${VERSION}/download/${BINARY_NAME}-${OS}-${ARCH}"
 
-if [[ "$OS" == UNSUPPORTED:* ]] || [[ "$ARCH" == UNSUPPORTED:* ]]; then
-  printf "${ORANGE}Unsupported platform: %s %s${NC}\n" "$(uname -s)" "$(uname -m)"
+# Windows users can use install.ps1 (but bash also works via Git Bash / WSL)
+if [[ "$OS" == "windows" ]]; then
+  printf "Tip: Windows users can also use the PowerShell installer:\n"
+  printf "  irm https://mantracode.vercel.app/install.ps1 | iex\n\n"
+fi
+
+# Compose download URL and local filename
+if [[ "$OS" == "windows" ]]; then
+  REMOTE_BINARY="mantracode-${OS}-${ARCH}.exe"
+  BINARY_NAME="mantracode.exe"
+else
+  REMOTE_BINARY="mantracode-${OS}-${ARCH}"
+  BINARY_NAME="mantracode"
+fi
+
+DOWNLOAD_URL="https://github.com/${REPO}/releases/${VERSION}/download/${REMOTE_BINARY}"
+
+# ----- Source installation fallback -----
+source_install() {
+  local reason="$1"
+  printf "${ORANGE}${reason}${NC}\n"
   printf "Falling back to source installation...\n\n"
   if ! command -v bun &>/dev/null; then
     printf "Installing Bun...\n"
@@ -53,6 +72,7 @@ if [[ "$OS" == UNSUPPORTED:* ]] || [[ "$ARCH" == UNSUPPORTED:* ]]; then
     export BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
     export PATH="$BUN_INSTALL/bin:$PATH"
   fi
+  local TEMP_DIR
   TEMP_DIR="$(mktemp -d)"
   printf "Cloning repository...\n"
   git clone --depth 1 "https://github.com/${REPO}.git" "$TEMP_DIR"
@@ -62,14 +82,26 @@ if [[ "$OS" == UNSUPPORTED:* ]] || [[ "$ARCH" == UNSUPPORTED:* ]]; then
   bun link
   printf "${GREEN}MantraCode installed successfully via source!${NC}\n"
   exit 0
+}
+
+if [[ "$OS" == UNSUPPORTED:* ]]; then
+  source_install "Unsupported OS: $(uname -s)"
+fi
+if [[ "$ARCH" == UNSUPPORTED:* ]]; then
+  source_install "Unsupported architecture: $(uname -m)"
 fi
 
+# ----- Determine install directory -----
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
+if [[ "$OS" == "windows" ]]; then
+  INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
+fi
 if [[ ! -w "$INSTALL_DIR" ]]; then
   INSTALL_DIR="$HOME/.local/bin"
   mkdir -p "$INSTALL_DIR"
 fi
 
+# ----- Download -----
 DOWNLOAD_DIR="$(mktemp -d)"
 trap 'rm -rf "$DOWNLOAD_DIR"' EXIT
 
@@ -86,26 +118,10 @@ else
 fi
 
 if [[ "$HTTP_CODE" != "200" ]]; then
-  printf "${ORANGE}Failed to download binary (HTTP %s).${NC}\n" "$HTTP_CODE"
-  printf "The pre-built binary may not be available for your platform yet.\n"
-  printf "Falling back to source installation...\n\n"
-  if ! command -v bun &>/dev/null; then
-    printf "Installing Bun...\n"
-    curl -fsSL https://bun.sh/install | bash
-    export BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
-    export PATH="$BUN_INSTALL/bin:$PATH"
-  fi
-  TEMP_DIR="$(mktemp -d)"
-  trap 'rm -rf "$DOWNLOAD_DIR" "$TEMP_DIR"' EXIT
-  git clone --depth 1 "https://github.com/${REPO}.git" "$TEMP_DIR"
-  cd "$TEMP_DIR"
-  DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" bun install
-  bun run build:cli
-  bun link
-  printf "${GREEN}MantraCode installed successfully via source!${NC}\n"
-  exit 0
+  source_install "Failed to download binary (HTTP ${HTTP_CODE}). The pre-built binary may not be available for your platform yet."
 fi
 
+# ----- Install -----
 chmod +x "${DOWNLOAD_DIR}/${BINARY_NAME}"
 cp "${DOWNLOAD_DIR}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
 
@@ -116,5 +132,7 @@ else
   printf "${GREEN}MantraCode installed to %s/%s${NC}\n" "$INSTALL_DIR" "$BINARY_NAME"
   printf "\n"
   printf "Make sure %s is in your PATH, then run ${ORANGE}mantracode${NC}.\n" "$INSTALL_DIR"
-  printf "  export PATH=\"%s:\$PATH\"\n" "$INSTALL_DIR"
+  if [[ "$OS" != "windows" ]]; then
+    printf "  export PATH=\"%s:\$PATH\"\n" "$INSTALL_DIR"
+  fi
 fi

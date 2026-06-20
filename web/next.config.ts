@@ -13,6 +13,13 @@ const nextConfig: NextConfig = {
           { key: "Cache-Control", value: "public, max-age=3600" },
         ],
       },
+      {
+        source: "/install.ps1",
+        headers: [
+          { key: "Content-Type", value: "text/x-powershell" },
+          { key: "Cache-Control", value: "public, max-age=3600" },
+        ],
+      },
     ];
   },
 };

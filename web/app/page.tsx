@@ -437,6 +437,10 @@ export default function Home() {
             <p className="text-white">
               <span className="text-[#A1A1AA]">$ </span>mantracode
             </p>
+            <p className="mt-3 text-xs text-[#A1A1AA] border-t border-white/5 pt-3">
+              <span className="text-purple-400">Windows:</span>{" "}
+              irm https://mantracode.vercel.app/install.ps1 | iex
+            </p>
           </div>
         </div>
 
@@ -445,7 +449,7 @@ export default function Home() {
           <ul className="text-sm text-[#A1A1AA] space-y-1.5">
             <li className="flex items-start gap-2">
               <span className="text-[#FF651D] mt-0.5">▸</span>
-              macOS 12+ or Linux (x86_64 / arm64)
+              macOS 12+, Linux, or Windows (x86_64 / arm64)
             </li>
             <li className="flex items-start gap-2">
               <span className="text-[#FF651D] mt-0.5">▸</span>

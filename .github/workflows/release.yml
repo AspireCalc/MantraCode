@@ -37,6 +37,9 @@ jobs:
           - target: bun-darwin-x64
             runner: macos-latest
             binary: mantracode-darwin-x64
+          - target: bun-windows-x64
+            runner: windows-latest
+            binary: mantracode-windows-x64.exe
 
     steps:
       - uses: actions/checkout@v4
@@ -51,9 +54,19 @@ jobs:
           DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
 
       - name: Install all native OpenTUI packages (for cross-compilation)
-        run: bun add @opentui/core-linux-x64@0.2.10 @opentui/core-linux-arm64@0.2.10 @opentui/core-darwin-x64@0.2.10 @opentui/core-darwin-arm64@0.2.10
-        env:
-          DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
+        shell: bash
+        run: |
+          for pkg in linux-x64 linux-arm64 darwin-x64 darwin-arm64 win32-x64; do
+            dir="node_modules/@opentui/core-${pkg}"
+            if [ -d "$dir" ] && [ -f "$dir/package.json" ]; then
+              echo "core-${pkg} already installed, skipping"
+              continue
+            fi
+            echo "Downloading @opentui/core-${pkg}@0.2.10..."
+            mkdir -p "$dir"
+            tarball_url="https://registry.npmjs.org/@opentui/core-${pkg}/-/opentui-core-${pkg}-0.2.10.tgz"
+            curl -sS "$tarball_url" | tar -xz -C "$dir" --strip-components=1
+          done
 
       - name: Build standalone binary
         run: |
