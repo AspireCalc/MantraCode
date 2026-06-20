@@ -125,10 +125,11 @@ function htmlPage(title: string, body: string, success: boolean): string {
 </html>`;
 }
 
+const CALLBACK_PORT = 14567;
+
 export async function performLogin() {
     const clerkFrontendAPI = process.env.CLERK_FRONTEND_API ?? "https://hardy-herring-49.clerk.accounts.dev";
     const clientId = process.env.CLERK_OAUTH_CLIENT_ID ?? "9R61OZS1XkChSXF4";
-    const apiUrl = process.env.API_URL ?? "http://localhost:3000";
 
     const nonce = crypto.randomUUID();
     const codeVerifier = toBase64Url(crypto.getRandomValues(new Uint8Array(32)));
@@ -137,93 +138,95 @@ export async function performLogin() {
     let settled = false;
 
     return new Promise<{ token: string }>((resolve, reject) => {
-        const server = Bun.serve({
-            port: 0,
-            async fetch(req: Request) {
-                const url = new URL(req.url);
+        let server: ReturnType<typeof Bun.serve>;
 
-                if (url.pathname !== "/callback") {
-                    return new Response(htmlPage("Not Found", "<p>The callback endpoint was not found.</p>", false), { status: 404, headers: { "Content-Type": "text/html" } });
-                }
+        for (let port = CALLBACK_PORT; port < CALLBACK_PORT + 10; port++) {
+            try {
+                server = Bun.serve({
+                    port,
+                    async fetch(req: Request) {
+                        const url = new URL(req.url);
 
-                const error = url.searchParams.get("error");
-                if (error) {
-                    const msg = url.searchParams.get("error_description") ?? error;
-                    settled = true;
-                    reject(new Error(msg));
-                    setTimeout(() => server.stop(), 500);
-                    return new Response(htmlPage("Authentication Failed", `<p>The OAuth provider returned an error.</p><div class="detail">${msg}</div>`, false), { status: 400, headers: { "Content-Type": "text/html" } });
-                }
+                        if (url.pathname !== "/callback") {
+                            return new Response(htmlPage("Not Found", "<p>The callback endpoint was not found.</p>", false), { status: 404, headers: { "Content-Type": "text/html" } });
+                        }
 
-                const code = url.searchParams.get("code");
-                const state = url.searchParams.get("state");
-                if (!code || !state) {
-                    settled = true;
-                    reject(new Error("Missing code or state"));
-                    setTimeout(() => server.stop(), 500);
-                    return new Response(htmlPage("Bad Request", "<p>The callback request was missing required parameters.</p>", false), { status: 400, headers: { "Content-Type": "text/html" } });
-                }
+                        const error = url.searchParams.get("error");
+                        if (error) {
+                            const msg = url.searchParams.get("error_description") ?? error;
+                            settled = true;
+                            reject(new Error(msg));
+                            setTimeout(() => server.stop(), 500);
+                            return new Response(htmlPage("Authentication Failed", `<p>The OAuth provider returned an error.</p><div class="detail">${msg}</div>`, false), { status: 400, headers: { "Content-Type": "text/html" } });
+                        }
 
-                try {
-                    const payload = decodeState(state);
-                    if (payload.nonce !== nonce) {
-                        throw new Error("State mismatch");
-                    }
-                } catch (err) {
-                    settled = true;
-                    reject(err);
-                    setTimeout(() => server.stop(), 500);
-                    return new Response(htmlPage("Invalid State", `<p>${getErrorMessage(err)}</p>`, false), { status: 400, headers: { "Content-Type": "text/html" } });
-                }
+                        const code = url.searchParams.get("code");
+                        const state = url.searchParams.get("state");
+                        if (!code || !state) {
+                            settled = true;
+                            reject(new Error("Missing code or state"));
+                            setTimeout(() => server.stop(), 500);
+                            return new Response(htmlPage("Bad Request", "<p>The callback request was missing required parameters.</p>", false), { status: 400, headers: { "Content-Type": "text/html" } });
+                        }
 
-                try {
-                    const redirectUri = `${apiUrl}/auth/callback`;
+                        try {
+                            const payload = decodeState(state);
+                            if (payload.nonce !== nonce) {
+                                throw new Error("State mismatch");
+                            }
+                        } catch (err) {
+                            settled = true;
+                            reject(err);
+                            setTimeout(() => server.stop(), 500);
+                            return new Response(htmlPage("Invalid State", `<p>${getErrorMessage(err)}</p>`, false), { status: 400, headers: { "Content-Type": "text/html" } });
+                        }
 
-                    const tokenRes = await fetch(`${clerkFrontendAPI}/oauth/token`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/x-www-form-urlencoded"
-                        },
-                        body: new URLSearchParams({
-                            grant_type: "authorization_code",
-                            code,
-                            redirect_uri: redirectUri,
-                            client_id: clientId,
-                            code_verifier: codeVerifier,
-                        }),
-                    });
+                        try {
+                            const tokenRes = await fetch(`${clerkFrontendAPI}/oauth/token`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                                body: new URLSearchParams({
+                                    grant_type: "authorization_code",
+                                    code,
+                                    redirect_uri: `http://127.0.0.1:${server.port}/callback`,
+                                    client_id: clientId,
+                                    code_verifier: codeVerifier,
+                                }),
+                            });
 
-                    if (!tokenRes.ok) {
-                        const details = await tokenRes.text();
-                        throw new Error(details || "Failed to exchange authorization code");
-                    }
+                            if (!tokenRes.ok) {
+                                const details = await tokenRes.text();
+                                throw new Error(details || "Failed to exchange authorization code");
+                            }
 
-                    const tokenData = (await tokenRes.json()) as { access_token: string };
+                            const tokenData = (await tokenRes.json()) as { access_token: string };
 
-                    settled = true;
-                    saveAuth({ token: tokenData.access_token });
-                    resolve({ token: tokenData.access_token });
-                    setTimeout(() => server.stop(), 500);
-                    return new Response(htmlPage("Authenticated!", "<p>Your authentication was successful. You are now signed in to MantraCode CLI.</p>", true), { headers: { "Content-Type": "text/html" } });
-                } catch (err) {
-                    settled = true;
-                    reject(err);
-                    const message = getErrorMessage(err);
-                    setTimeout(() => server.stop(), 500);
-                    return new Response(htmlPage("Authentication Failed", `<p>Failed to exchange the authorization code for a token.</p><div class="detail">${message}</div>`, false), { status: 400, headers: { "Content-Type": "text/html" } });
-                }
-            },
-        });
+                            settled = true;
+                            saveAuth({ token: tokenData.access_token });
+                            resolve({ token: tokenData.access_token });
+                            setTimeout(() => server.stop(), 500);
+                            return new Response(htmlPage("Authenticated!", "<p>Your authentication was successful. You are now signed in to MantraCode CLI.</p>", true), { headers: { "Content-Type": "text/html" } });
+                        } catch (err) {
+                            settled = true;
+                            reject(err);
+                            const message = getErrorMessage(err);
+                            setTimeout(() => server.stop(), 500);
+                            return new Response(htmlPage("Authentication Failed", `<p>Failed to exchange the authorization code for a token.</p><div class="detail">${message}</div>`, false), { status: 400, headers: { "Content-Type": "text/html" } });
+                        }
+                    },
+                });
+                break;
+            } catch { }
+        }
 
-        const port = server.port;
-        if (typeof port !== "number") {
-            server.stop();
-            reject(new Error("Failed to start callback server"));
+        if (!server!) {
+            reject(new Error("Could not find an available port for the OAuth callback server"));
             return;
         }
 
-        const state = encodeState({ port, nonce });
-        const redirectUri = `${apiUrl}/auth/callback`;
+        const cbPort = server.port!;
+        const redirectUri = `http://127.0.0.1:${cbPort}/callback`;
+        const state = encodeState({ port: cbPort, nonce });
 
         const authorizeUrl = new URL(`${clerkFrontendAPI}/oauth/authorize`);
         authorizeUrl.searchParams.set("response_type", "code");
@@ -248,6 +251,6 @@ export async function performLogin() {
                 server.stop();
                 reject(new Error("Login timed out"));
             }
-        }, LOGIN_TIMEOUT_MS)
+        }, LOGIN_TIMEOUT_MS);
     });
 }

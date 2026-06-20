@@ -2,7 +2,7 @@ import { hc } from "hono/client";
 import type { AppType } from "@aspirenx/mantracode-server";
 import { clearAuth, getAuth } from "./auth";
 
-export const apiClient = hc<AppType>(process.env.API_URL ?? "http://localhost:3000", {
+export const apiClient = hc<AppType>(process.env.API_URL ?? "https://api-mantra-code.up.railway.app", {
     fetch: async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
         const headers = new Headers(init?.headers);
         const auth = getAuth();

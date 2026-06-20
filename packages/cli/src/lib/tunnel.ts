@@ -351,7 +351,7 @@ function connect() {
   const auth = getAuth();
   if (!auth) return;
 
-  const apiUrl = process.env.API_URL ?? "http://localhost:3000";
+  const apiUrl = process.env.API_URL ?? "https://api-mantra-code.up.railway.app";
   const wsUrl = apiUrl.replace(/^http/, "ws") + "/ws/tunnel";
 
   try {

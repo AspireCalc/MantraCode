@@ -102,8 +102,10 @@ const fetchHandler: Parameters<typeof Bun.serve>[0]["fetch"] = (request, server)
   return app.fetch(request, server);
 };
 
+const port = parseInt(process.env.PORT ?? "3000", 10);
+
 export default {
-  port: 3000,
+  port,
   fetch: fetchHandler,
   idleTimeout: 255,
   websocket: {
