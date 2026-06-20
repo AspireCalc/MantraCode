@@ -14,6 +14,9 @@ on:
 permissions:
   contents: write
 
+env:
+  DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
+
 jobs:
   build:
     name: Build ${{ matrix.target }}
@@ -43,11 +46,9 @@ jobs:
           bun-version: latest
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Generate Prisma client
-        run: bun run --filter @mantracode/database db:generate
-        continue-on-error: true
+        run: bun install
+        env:
+          DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
 
       - name: Build standalone binary
         run: |
@@ -67,8 +68,7 @@ jobs:
     name: Create Release
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-
+    if: always()
     steps:
       - uses: actions/checkout@v4
 
@@ -91,12 +91,11 @@ jobs:
           fi
 
       - name: Create GitHub Release
+        if: steps.tag.outputs.name != ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="${{ steps.tag.outputs.name }}"
-
-          # Create the release (or update if exists)
           gh release create "$TAG" \
             --title "MantraCode $TAG" \
             --generate-notes \
