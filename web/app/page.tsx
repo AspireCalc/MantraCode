@@ -106,10 +106,27 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* HERO */}
-      <section className="min-h-screen flex flex-col items-center justify-center px-6 pt-20 pb-24 relative overflow-hidden bg-grid">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_#FF651D10_0%,_transparent_60%)] pointer-events-none" />
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#FF651D]/3 rounded-full blur-3xl pointer-events-none" />
+      {/* HERO — grid lives here only */}
+      <section
+        className="min-h-screen flex flex-col items-center justify-center px-6 pt-20 pb-24 relative overflow-hidden"
+        style={{
+          backgroundImage: `
+            linear-gradient(var(--grid-line) 1px, transparent 1px),
+            linear-gradient(90deg, var(--grid-line) 1px, transparent 1px)
+          `,
+          backgroundSize: "48px 48px",
+        }}
+      >
+        {/* Grid fade-out mask: fades grid toward bottom so content sections below look clean */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse 80% 60% at 50% 0%, transparent 40%, var(--bg) 100%)",
+          }}
+        />
+        {/* Subtle orange glow at top center */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-[#FF651D]/6 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col items-center text-center max-w-3xl">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[var(--border)] bg-[var(--overlay)] text-sm text-[var(--text-muted)] mb-8">
@@ -132,10 +149,10 @@ export default function Home() {
                 const el = document.getElementById("copy-feedback");
                 if (el) {
                   el.textContent = "Copied!";
-                  setTimeout(() => (el.textContent = "Copy"), 1500);
+                  setTimeout(() => (el.textContent = "Copy Install Command"), 1500);
                 }
               }}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#FF651D] text-[var(--text-bold)] font-semibold hover:bg-[#FF8A4D] transition-colors text-sm"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#FF651D] text-white font-semibold hover:bg-[#FF8A4D] transition-colors text-sm"
             >
               <svg
                 className="w-4 h-4"
@@ -162,13 +179,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* INSTALL TERMINAL BOX */}
-        <div className="relative z-10 mt-16 w-full max-w-3xl">
-          <InstallTerminalBox />
-        </div>
-
         {/* TERMINAL MOCKUP */}
-        <div className="relative z-10 mt-20 w-full max-w-3xl">
+        <div className="relative z-10 mt-16 w-full max-w-3xl">
           <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] overflow-hidden shadow-2xl">
             <div className="flex items-center gap-1.5 px-4 py-3 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
               <span className="w-3 h-3 rounded-full bg-red-500/80" />
@@ -204,7 +216,7 @@ export default function Home() {
       {/* FEATURES */}
       <section
         id="features"
-        className="px-6 py-24 max-w-6xl mx-auto scroll-mt-20 bg-grid"
+        className="px-6 py-24 max-w-6xl mx-auto scroll-mt-20"
       >
         <SectionTitle>
           Everything a developer needs, in one{" "}
@@ -402,7 +414,7 @@ export default function Home() {
       </section>
 
       {/* HOW IT WORKS */}
-      <section className="px-6 py-24 max-w-6xl mx-auto bg-grid">
+      <section className="px-6 py-24 max-w-6xl mx-auto">
         <SectionTitle>
           How it <span className="text-[#FF651D]">works</span>
         </SectionTitle>
@@ -451,7 +463,7 @@ export default function Home() {
       {/* INSTALL */}
       <section
         id="install"
-        className="px-6 py-24 max-w-3xl mx-auto scroll-mt-20 bg-grid"
+        className="px-6 py-24 max-w-3xl mx-auto scroll-mt-20"
       >
         <SectionTitle>
           Get started in{" "}
@@ -461,6 +473,9 @@ export default function Home() {
           Works on macOS, Linux, and Windows. The install script handles
           everything.
         </SectionSubtitle>
+
+        {/* Install command box — was missing before */}
+        <InstallTerminalBox />
 
         <div className="mt-8 rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] p-5">
           <h3 className="font-semibold text-sm mb-2">Prerequisites</h3>
@@ -488,7 +503,7 @@ export default function Home() {
       {/* CLI COMMANDS */}
       <section
         id="commands"
-        className="px-6 py-24 max-w-4xl mx-auto scroll-mt-20 bg-grid"
+        className="px-6 py-24 max-w-4xl mx-auto scroll-mt-20"
       >
         <SectionTitle>
           <span className="text-[#FF651D]">Slash</span> Commands
@@ -541,7 +556,7 @@ export default function Home() {
       </section>
 
       {/* MODELS */}
-      <section className="px-6 py-24 max-w-4xl mx-auto bg-grid">
+      <section className="px-6 py-24 max-w-4xl mx-auto">
         <SectionTitle>
           Supported <span className="text-[#FF651D]">Models</span>
         </SectionTitle>
@@ -658,7 +673,7 @@ function InstallTerminalBox() {
   };
 
   return (
-    <div className="mt-12 rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] overflow-hidden">
+    <div className="mt-10 rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] overflow-hidden">
       {/* Terminal header with tabs and copy button */}
       <div className="flex items-center justify-between px-5 border-b border-[var(--border-subtle)] bg-[var(--bg)]">
         <div className="flex">

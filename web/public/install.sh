@@ -77,7 +77,7 @@ binary_install() {
     LOCAL_NAME="mantracode"
   fi
 
-  local url="https://github.com/${REPO}/releases/${VERSION}/download/${REMOTE_BINARY}"
+  local url="https://github.com/${REPO}/releases/download/${VERSION}/${REMOTE_BINARY}"
   local tmpdir
   tmpdir="$(mktemp -d)"
   trap 'rm -rf "$tmpdir"' EXIT
@@ -86,7 +86,7 @@ binary_install() {
 
   local http_code
   if command -v curl &>/dev/null; then
-    http_code="$(curl -sS -w '%{http_code}' -o "${tmpdir}/${LOCAL_NAME}" "$url" 2>/dev/null)"
+    http_code="$(curl -sSL -w '%{http_code}' -o "${tmpdir}/${LOCAL_NAME}" "$url" 2>/dev/null)"
   elif command -v wget &>/dev/null; then
     http_code="$(wget -q -O "${tmpdir}/${LOCAL_NAME}" "$url" 2>/dev/null && echo "200" || echo "failed")"
   else
