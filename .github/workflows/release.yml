@@ -35,7 +35,7 @@ jobs:
             runner: macos-latest
             binary: mantracode-darwin-arm64
           - target: bun-darwin-x64
-            runner: macos-13
+            runner: macos-latest
             binary: mantracode-darwin-x64
 
     steps:
@@ -47,6 +47,11 @@ jobs:
 
       - name: Install dependencies
         run: bun install
+        env:
+          DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
+
+      - name: Install all native OpenTUI packages (for cross-compilation)
+        run: bun add @opentui/core-linux-x64@0.2.10 @opentui/core-linux-arm64@0.2.10 @opentui/core-darwin-x64@0.2.10 @opentui/core-darwin-arm64@0.2.10
         env:
           DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
 
