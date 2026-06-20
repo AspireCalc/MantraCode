@@ -1,6 +1,6 @@
 {
   "name": "@aspirenx/mantracode",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "module": "dist/index.js",
   "type": "module",
   "bin": "./bin/mantracode",

@@ -126,12 +126,9 @@ function htmlPage(title: string, body: string, success: boolean): string {
 }
 
 export async function performLogin() {
-    const clerkFrontendAPI = process.env.CLERK_FRONTEND_API;
-    const clientId = process.env.CLERK_OAUTH_CLIENT_ID;
+    const clerkFrontendAPI = process.env.CLERK_FRONTEND_API ?? "https://hardy-herring-49.clerk.accounts.dev";
+    const clientId = process.env.CLERK_OAUTH_CLIENT_ID ?? "9R61OZS1XkChSXF4";
     const apiUrl = process.env.API_URL ?? "http://localhost:3000";
-
-    if (!clerkFrontendAPI) throw new Error("CLERK_FRONTEND_API not set");
-    if (!clientId) throw new Error("CLERK_OAUTH_CLIENT_ID not set");
 
     const nonce = crypto.randomUUID();
     const codeVerifier = toBase64Url(crypto.getRandomValues(new Uint8Array(32)));
