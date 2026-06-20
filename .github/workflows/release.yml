@@ -69,6 +69,7 @@ jobs:
           done
 
       - name: Build standalone binary
+        shell: bash
         run: |
           bun build --compile \
             --target ${{ matrix.target }} \

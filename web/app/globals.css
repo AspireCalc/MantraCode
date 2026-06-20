@@ -4,11 +4,38 @@
   --color-mantra: #FF651D;
   --color-mantra-light: #FF8A4D;
   --color-mantra-dark: #CC4E0E;
-  --color-surface: #181820;
-  --color-surface-light: #22222E;
-  --color-muted: #A1A1AA;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+@layer base {
+  :root {
+    --bg: #FFFFFF;
+    --bg-secondary: #F4F4F7;
+    --bg-tertiary: #E8E8EE;
+    --bg-hover: #EFEFF3;
+    --text: #222226;
+    --text-bold: #111115;
+    --text-muted: #666676;
+    --border: rgba(0, 0, 0, 0.1);
+    --border-subtle: rgba(0, 0, 0, 0.06);
+    --overlay: rgba(0, 0, 0, 0.05);
+    --overlay-hover: rgba(0, 0, 0, 0.02);
+  }
+
+  [data-theme="dark"] {
+    --bg: #0E0E12;
+    --bg-secondary: #181820;
+    --bg-tertiary: #22222E;
+    --bg-hover: #1C1C28;
+    --text: #E4E4E7;
+    --text-bold: #FFFFFF;
+    --text-muted: #A1A1AA;
+    --border: rgba(255, 255, 255, 0.1);
+    --border-subtle: rgba(255, 255, 255, 0.05);
+    --overlay: rgba(255, 255, 255, 0.05);
+    --overlay-hover: rgba(255, 255, 255, 0.02);
+  }
 }
 
 html {
@@ -16,6 +43,20 @@ html {
 }
 
 body {
-  background: #0E0E12;
-  color: #E4E4E7;
+  background: var(--bg);
+  color: var(--text);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* Grid background pattern */
+.bg-grid {
+  background-image:
+    linear-gradient(var(--border-subtle) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* Semi-transparent nav background for backdrop-blur */
+.bg-nav {
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
 }

@@ -52,6 +52,12 @@ npm_install() {
     installer="bun"
   fi
 
+  # Check if the package exists on the registry before attempting install
+  if ! npm view "$NPM_PACKAGE" version &>/dev/null; then
+    printf "${ORANGE}Package ${NPM_PACKAGE} not found on npm.${NC}\n"
+    return 1
+  fi
+
   if $installer install -g "$NPM_PACKAGE" 2>/dev/null; then
     printf "${GREEN}MantraCode installed successfully via npm!${NC}\n\n"
     printf "Run ${ORANGE}mantracode${NC} in any project directory to start.\n"

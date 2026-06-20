@@ -8,7 +8,7 @@ const GITHUB_URL = "https://github.com/AspireCalc/MantraCode";
 
 function Code({ children }: { children: string }) {
   return (
-    <code className="bg-[#22222E] text-[#FF651D] px-2 py-0.5 rounded text-sm font-mono">
+    <code className="bg-[var(--bg-tertiary)] text-[#FF651D] px-2 py-0.5 rounded text-sm font-mono">
       {children}
     </code>
   );
@@ -24,50 +24,95 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 function SectionSubtitle({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[#A1A1AA] text-center mt-4 text-lg max-w-2xl mx-auto">
+    <p className="text-[var(--text-muted)] text-center mt-4 text-lg max-w-2xl mx-auto">
       {children}
     </p>
   );
 }
 
 export default function Home() {
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  const toggleTheme = () => {
+    const next = theme === "light" ? "dark" : "light";
+    setTheme(next);
+    document.documentElement.setAttribute("data-theme", next);
+  };
+
   return (
     <>
       {/* NAV */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0E0E12]/80 backdrop-blur-md border-b border-white/5">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-nav backdrop-blur-md border-b border-[var(--border-subtle)]">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <span className="font-bold text-lg tracking-tight">
             <span className="text-[#FF651D]">Mantra</span>Code
           </span>
-          <div className="flex items-center gap-6 text-sm text-[#A1A1AA]">
-            <a href="#features" className="hover:text-white transition-colors">
+          <div className="flex items-center gap-6 text-sm text-[var(--text-muted)]">
+            <a
+              href="#features"
+              className="hover:text-[var(--text-bold)] transition-colors"
+            >
               Features
             </a>
-            <a href="#install" className="hover:text-white transition-colors">
+            <a
+              href="#install"
+              className="hover:text-[var(--text-bold)] transition-colors"
+            >
               Install
             </a>
-            <a href="#commands" className="hover:text-white transition-colors">
+            <a
+              href="#commands"
+              className="hover:text-[var(--text-bold)] transition-colors"
+            >
               Commands
             </a>
             <a
               href={GITHUB_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-white transition-colors"
+              className="hover:text-[var(--text-bold)] transition-colors"
             >
               GitHub
             </a>
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg hover:bg-[var(--overlay)] transition-colors text-[var(--text-muted)] hover:text-[var(--text-bold)]"
+              aria-label="Toggle theme"
+            >
+              {theme === "light" ? (
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+              ) : (
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <circle cx="12" cy="12" r="5" />
+                  <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                </svg>
+              )}
+            </button>
           </div>
         </div>
       </nav>
 
       {/* HERO */}
-      <section className="min-h-screen flex flex-col items-center justify-center px-6 pt-20 pb-24 relative overflow-hidden">
+      <section className="min-h-screen flex flex-col items-center justify-center px-6 pt-20 pb-24 relative overflow-hidden bg-grid">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_#FF651D10_0%,_transparent_60%)] pointer-events-none" />
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#FF651D]/3 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col items-center text-center max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 text-sm text-[#A1A1AA] mb-8">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[var(--border)] bg-[var(--overlay)] text-sm text-[var(--text-muted)] mb-8">
             <span className="w-2 h-2 rounded-full bg-[#FF651D] animate-pulse" />
             v1.0.0 — Agentic AI in Your Terminal
           </div>
@@ -75,7 +120,7 @@ export default function Home() {
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
             <span className="text-[#FF651D]">Mantra</span>Code
           </h1>
-          <p className="text-xl sm:text-2xl text-[#A1A1AA] mt-4 max-w-xl">
+          <p className="text-xl sm:text-2xl text-[var(--text-muted)] mt-4 max-w-xl">
             An agentic AI coding assistant that runs entirely inside your
             terminal.
           </p>
@@ -90,7 +135,7 @@ export default function Home() {
                   setTimeout(() => (el.textContent = "Copy"), 1500);
                 }
               }}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#FF651D] text-white font-semibold hover:bg-[#FF8A4D] transition-colors text-sm"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#FF651D] text-[var(--text-bold)] font-semibold hover:bg-[#FF8A4D] transition-colors text-sm"
             >
               <svg
                 className="w-4 h-4"
@@ -107,7 +152,7 @@ export default function Home() {
               href={GITHUB_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-white/10 text-white font-semibold hover:bg-white/5 transition-colors text-sm"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-[var(--border)] text-[var(--text-bold)] font-semibold hover:bg-[var(--overlay)] transition-colors text-sm"
             >
               <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
                 <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
@@ -117,33 +162,38 @@ export default function Home() {
           </div>
         </div>
 
+        {/* INSTALL TERMINAL BOX */}
+        <div className="relative z-10 mt-16 w-full max-w-3xl">
+          <InstallTerminalBox />
+        </div>
+
         {/* TERMINAL MOCKUP */}
         <div className="relative z-10 mt-20 w-full max-w-3xl">
-          <div className="rounded-xl border border-white/10 bg-[#0E0E12] overflow-hidden shadow-2xl">
-            <div className="flex items-center gap-1.5 px-4 py-3 border-b border-white/5 bg-[#181820]">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] overflow-hidden shadow-2xl">
+            <div className="flex items-center gap-1.5 px-4 py-3 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
               <span className="w-3 h-3 rounded-full bg-red-500/80" />
               <span className="w-3 h-3 rounded-full bg-yellow-500/80" />
               <span className="w-3 h-3 rounded-full bg-green-500/80" />
-              <span className="ml-3 text-xs text-[#A1A1AA] font-mono">
+              <span className="ml-3 text-xs text-[var(--text-muted)] font-mono">
                 mantracode
               </span>
             </div>
             <div className="p-5 font-mono text-sm leading-relaxed">
               <p>
                 <span className="text-green-400">user</span>
-                <span className="text-[#A1A1AA]">@</span>
+                <span className="text-[var(--text-muted)]">@</span>
                 <span className="text-[#FF651D]">workspace</span>
-                <span className="text-[#A1A1AA]"> $ </span>
-                <span className="text-white">mantracode</span>
+                <span className="text-[var(--text-muted)]"> $ </span>
+                <span className="text-[var(--text-bold)]">mantracode</span>
               </p>
-              <p className="mt-2 text-[#A1A1AA]">
+              <p className="mt-2 text-[var(--text-muted)]">
                 <span className="text-[#FF651D]">●</span> MantraCode v1.0.0
               </p>
-              <p className="text-[#A1A1AA]">
+              <p className="text-[var(--text-muted)]">
                 <span className="text-purple-400">●</span> Mode: BUILD
               </p>
               <p className="mt-3">
-                <span className="text-white">Ask anything...</span>
+                <span className="text-[var(--text-bold)]">Ask anything...</span>
                 <span className="animate-pulse text-[#FF651D]">▊</span>
               </p>
             </div>
@@ -154,7 +204,7 @@ export default function Home() {
       {/* FEATURES */}
       <section
         id="features"
-        className="px-6 py-24 max-w-6xl mx-auto scroll-mt-20"
+        className="px-6 py-24 max-w-6xl mx-auto scroll-mt-20 bg-grid"
       >
         <SectionTitle>
           Everything a developer needs, in one{" "}
@@ -352,7 +402,7 @@ export default function Home() {
       </section>
 
       {/* HOW IT WORKS */}
-      <section className="px-6 py-24 max-w-6xl mx-auto">
+      <section className="px-6 py-24 max-w-6xl mx-auto bg-grid">
         <SectionTitle>
           How it <span className="text-[#FF651D]">works</span>
         </SectionTitle>
@@ -390,7 +440,7 @@ export default function Home() {
                 </span>
               </div>
               <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-              <p className="text-[#A1A1AA] text-sm leading-relaxed">
+              <p className="text-[var(--text-muted)] text-sm leading-relaxed">
                 {item.desc}
               </p>
             </div>
@@ -401,7 +451,7 @@ export default function Home() {
       {/* INSTALL */}
       <section
         id="install"
-        className="px-6 py-24 max-w-3xl mx-auto scroll-mt-20"
+        className="px-6 py-24 max-w-3xl mx-auto scroll-mt-20 bg-grid"
       >
         <SectionTitle>
           Get started in{" "}
@@ -412,11 +462,9 @@ export default function Home() {
           everything.
         </SectionSubtitle>
 
-        <InstallTerminalBox />
-
-        <div className="mt-8 rounded-xl border border-white/10 bg-[#181820] p-5">
+        <div className="mt-8 rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] p-5">
           <h3 className="font-semibold text-sm mb-2">Prerequisites</h3>
-          <ul className="text-sm text-[#A1A1AA] space-y-1.5">
+          <ul className="text-sm text-[var(--text-muted)] space-y-1.5">
             <li className="flex items-start gap-2">
               <span className="text-[#FF651D] mt-0.5">▸</span>
               macOS 12+, Linux, or Windows (x86_64 / arm64)
@@ -440,7 +488,7 @@ export default function Home() {
       {/* CLI COMMANDS */}
       <section
         id="commands"
-        className="px-6 py-24 max-w-4xl mx-auto scroll-mt-20"
+        className="px-6 py-24 max-w-4xl mx-auto scroll-mt-20 bg-grid"
       >
         <SectionTitle>
           <span className="text-[#FF651D]">Slash</span> Commands
@@ -450,14 +498,14 @@ export default function Home() {
           <Code>/</Code> in the input bar to open the command menu.
         </SectionSubtitle>
 
-        <div className="mt-12 rounded-xl border border-white/10 overflow-hidden">
+        <div className="mt-12 rounded-xl border border-[var(--border)] overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/5 bg-[#181820]">
-                <th className="text-left px-5 py-3 font-semibold text-[#A1A1AA]">
+              <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+                <th className="text-left px-5 py-3 font-semibold text-[var(--text-muted)]">
                   Command
                 </th>
-                <th className="text-left px-5 py-3 font-semibold text-[#A1A1AA]">
+                <th className="text-left px-5 py-3 font-semibold text-[var(--text-muted)]">
                   Description
                 </th>
               </tr>
@@ -479,12 +527,12 @@ export default function Home() {
               ].map(([cmd, desc]) => (
                 <tr
                   key={cmd}
-                  className="border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors"
+                  className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-[var(--overlay-hover)] transition-colors"
                 >
                   <td className="px-5 py-3 font-mono text-[#FF651D]">
                     {cmd}
                   </td>
-                  <td className="px-5 py-3 text-[#A1A1AA]">{desc}</td>
+                  <td className="px-5 py-3 text-[var(--text-muted)]">{desc}</td>
                 </tr>
               ))}
             </tbody>
@@ -493,7 +541,7 @@ export default function Home() {
       </section>
 
       {/* MODELS */}
-      <section className="px-6 py-24 max-w-4xl mx-auto">
+      <section className="px-6 py-24 max-w-4xl mx-auto bg-grid">
         <SectionTitle>
           Supported <span className="text-[#FF651D]">Models</span>
         </SectionTitle>
@@ -502,17 +550,17 @@ export default function Home() {
           reasoning support.
         </SectionSubtitle>
 
-        <div className="mt-12 rounded-xl border border-white/10 overflow-hidden">
+        <div className="mt-12 rounded-xl border border-[var(--border)] overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-white/5 bg-[#181820]">
-                <th className="text-left px-5 py-3 font-semibold text-[#A1A1AA]">
+              <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+                <th className="text-left px-5 py-3 font-semibold text-[var(--text-muted)]">
                   Model
                 </th>
-                <th className="text-left px-5 py-3 font-semibold text-[#A1A1AA]">
+                <th className="text-left px-5 py-3 font-semibold text-[var(--text-muted)]">
                   Type
                 </th>
-                <th className="text-left px-5 py-3 font-semibold text-[#A1A1AA]">
+                <th className="text-left px-5 py-3 font-semibold text-[var(--text-muted)]">
                   Pricing (per 1M tokens)
                 </th>
               </tr>
@@ -528,9 +576,9 @@ export default function Home() {
               ].map(([model, type, price]) => (
                 <tr
                   key={model}
-                  className="border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors"
+                  className="border-b border-[var(--border-subtle)] last:border-0 hover:bg-[var(--overlay-hover)] transition-colors"
                 >
-                  <td className="px-5 py-3 font-medium text-white">{model}</td>
+                  <td className="px-5 py-3 font-medium text-[var(--text-bold)]">{model}</td>
                   <td className="px-5 py-3">
                     <span
                       className={`text-xs font-medium px-2 py-0.5 rounded-full ${
@@ -542,7 +590,7 @@ export default function Home() {
                       {type}
                     </span>
                   </td>
-                  <td className="px-5 py-3 text-[#A1A1AA] font-mono">
+                  <td className="px-5 py-3 text-[var(--text-muted)] font-mono">
                     {price}
                   </td>
                 </tr>
@@ -553,10 +601,10 @@ export default function Home() {
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t border-white/5 px-6 py-12">
+      <footer className="border-t border-[var(--border-subtle)] px-6 py-12">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2 text-sm text-[#A1A1AA]">
-            <span className="font-bold text-white">
+          <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+            <span className="font-bold text-[var(--text-bold)]">
               <span className="text-[#FF651D]">Mantra</span>Code
             </span>
             <span>·</span>
@@ -564,12 +612,12 @@ export default function Home() {
             <span>·</span>
             <span>© {new Date().getFullYear()} AspireNX</span>
           </div>
-          <div className="flex items-center gap-4 text-sm text-[#A1A1AA]">
+          <div className="flex items-center gap-4 text-sm text-[var(--text-muted)]">
             <a
               href={GITHUB_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-white transition-colors"
+              className="hover:text-[var(--text-bold)] transition-colors"
             >
               GitHub
             </a>
@@ -577,7 +625,7 @@ export default function Home() {
               href={`${GITHUB_URL}/issues`}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-white transition-colors"
+              className="hover:text-[var(--text-bold)] transition-colors"
             >
               Issues
             </a>
@@ -585,7 +633,7 @@ export default function Home() {
               href={`${GITHUB_URL}/releases`}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-white transition-colors"
+              className="hover:text-[var(--text-bold)] transition-colors"
             >
               Releases
             </a>
@@ -610,16 +658,16 @@ function InstallTerminalBox() {
   };
 
   return (
-    <div className="mt-12 rounded-xl border border-white/10 bg-[#181820] overflow-hidden">
+    <div className="mt-12 rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] overflow-hidden">
       {/* Terminal header with tabs and copy button */}
-      <div className="flex items-center justify-between px-5 border-b border-white/5 bg-[#0E0E12]">
+      <div className="flex items-center justify-between px-5 border-b border-[var(--border-subtle)] bg-[var(--bg)]">
         <div className="flex">
           <button
             onClick={() => setTab("unix")}
             className={`px-4 py-3 text-xs font-mono border-b-2 transition-colors ${
               tab === "unix"
                 ? "text-[#FF651D] border-[#FF651D]"
-                : "text-[#A1A1AA] border-transparent hover:text-white"
+                : "text-[var(--text-muted)] border-transparent hover:text-[var(--text-bold)]"
             }`}
           >
             macOS & Linux
@@ -629,7 +677,7 @@ function InstallTerminalBox() {
             className={`px-4 py-3 text-xs font-mono border-b-2 transition-colors ${
               tab === "windows"
                 ? "text-[#FF651D] border-[#FF651D]"
-                : "text-[#A1A1AA] border-transparent hover:text-white"
+                : "text-[var(--text-muted)] border-transparent hover:text-[var(--text-bold)]"
             }`}
           >
             Windows
@@ -637,7 +685,7 @@ function InstallTerminalBox() {
         </div>
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1.5 px-3 py-1.5 mr-2 text-xs text-[#A1A1AA] hover:text-white transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 mr-2 text-xs text-[var(--text-muted)] hover:text-[var(--text-bold)] transition-colors"
         >
           <svg
             className="w-3.5 h-3.5"
@@ -655,12 +703,12 @@ function InstallTerminalBox() {
       {/* Command display */}
       <div className="p-5 font-mono text-sm">
         <p>
-          <span className="text-[#A1A1AA]">{prompt} </span>
-          <span className="text-white">{cmd}</span>
+          <span className="text-[var(--text-muted)]">{prompt} </span>
+          <span className="text-[var(--text-bold)]">{cmd}</span>
         </p>
-        <p className="mt-3 text-[#A1A1AA] text-xs border-t border-white/5 pt-3">
+        <p className="mt-3 text-[var(--text-muted)] text-xs border-t border-[var(--border-subtle)] pt-3">
           <span className="text-green-400">#</span> Then run{" "}
-          <span className="text-white">mantracode</span> in any project
+          <span className="text-[var(--text-bold)]">mantracode</span> in any project
           directory.
         </p>
       </div>
@@ -678,12 +726,12 @@ function FeatureCard({
   description: React.ReactNode;
 }) {
   return (
-    <div className="group rounded-xl border border-white/5 bg-[#181820] p-5 hover:border-[#FF651D]/20 hover:bg-[#1C1C28] transition-all duration-300">
+    <div className="group rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-5 hover:border-[#FF651D]/20 hover:bg-[var(--bg-hover)] transition-all duration-300">
       <div className="w-9 h-9 rounded-lg bg-[#FF651D]/10 border border-[#FF651D]/20 flex items-center justify-center text-[#FF651D] mb-3 group-hover:bg-[#FF651D]/15 transition-colors">
         {icon}
       </div>
-      <h3 className="font-semibold text-sm mb-2 text-white">{title}</h3>
-      <p className="text-[#A1A1AA] text-sm leading-relaxed">{description}</p>
+      <h3 className="font-semibold text-sm mb-2 text-[var(--text-bold)]">{title}</h3>
+      <p className="text-[var(--text-muted)] text-sm leading-relaxed">{description}</p>
     </div>
   );
 }
