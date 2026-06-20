@@ -2,17 +2,13 @@
 
 import { useEffect, useState } from "react";
 
-const UNIX_CMD =
-  "curl -fsSL https://mantracode.vercel.app/install.sh | sh";
-const WINDOWS_CMD =
-  "irm https://mantracode.vercel.app/install.ps1 | iex";
+const UNIX_CMD = "curl -fsSL https://mantracode.vercel.app/install.sh | sh";
+const WINDOWS_CMD = "irm https://mantracode.vercel.app/install.ps1 | iex";
 const GITHUB_URL = "https://github.com/AspireCalc/MantraCode";
 const THEME_STORAGE_KEY = "mantracode-theme";
 
-// Inject hero grid CSS once on the client — no separate CSS file needed.
-// Two sets of rules handle light and dark themes via data-theme attribute.
 if (typeof document !== "undefined") {
-  const id = "mantracode-hero-grid-style";
+  const id = "mantracode-page-style";
   if (!document.getElementById(id)) {
     const style = document.createElement("style");
     style.id = id;
@@ -20,14 +16,49 @@ if (typeof document !== "undefined") {
       .hero-grid {
         background-color: var(--bg);
         background-image:
-          linear-gradient(rgba(120,120,120,0.10) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(120,120,120,0.10) 1px, transparent 1px);
-        background-size: 48px 48px;
+          linear-gradient(rgba(120,120,120,0.08) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(120,120,120,0.08) 1px, transparent 1px);
+        background-size: 42px 42px;
       }
       [data-theme="dark"] .hero-grid {
         background-image:
-          linear-gradient(rgba(255,255,255,0.055) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(255,255,255,0.055) 1px, transparent 1px);
+          linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+      }
+
+      .section-shell {
+        position: relative;
+      }
+
+      .soft-panel {
+        background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+        backdrop-filter: blur(10px);
+      }
+
+      .hairline {
+        border-color: color-mix(in srgb, var(--border) 82%, transparent);
+      }
+
+      .terminal-glow {
+        box-shadow:
+          0 20px 60px rgba(0, 0, 0, 0.16),
+          0 0 0 1px color-mix(in srgb, var(--border) 90%, transparent);
+      }
+
+      .mantra-divider {
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          color-mix(in srgb, var(--border) 85%, transparent),
+          transparent
+        );
+      }
+
+      .hero-orb {
+        background:
+          radial-gradient(circle at center, rgba(0, 184, 148, 0.16), transparent 65%);
+        filter: blur(50px);
       }
     `;
     document.head.appendChild(style);
@@ -41,9 +72,7 @@ function getPreferredTheme(): Theme {
 
   try {
     const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
-    if (storedTheme === "light" || storedTheme === "dark") {
-      return storedTheme;
-    }
+    if (storedTheme === "light" || storedTheme === "dark") return storedTheme;
   } catch {}
 
   return window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -65,24 +94,105 @@ function Code({ children }: { children: string }) {
   );
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
+function SectionEyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-3xl sm:text-4xl font-bold text-center tracking-tight">
-      {children}
-    </h2>
-  );
-}
-
-function SectionSubtitle({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-(--text-muted) text-center mt-4 text-lg max-w-2xl mx-auto">
+    <p className="text-[11px] uppercase tracking-[0.22em] text-mantra font-semibold">
       {children}
     </p>
   );
 }
 
-// Compact inline pill shown in the hero — just the unix command + copy.
-// No tabs, no chrome. Scannable at a glance.
+function SectionTitle({
+  children,
+  center = false,
+}: {
+  children: React.ReactNode;
+  center?: boolean;
+}) {
+  return (
+    <h2
+      className={`text-3xl sm:text-4xl font-bold tracking-tight text-(--text-bold) ${
+        center ? "text-center" : ""
+      }`}
+    >
+      {children}
+    </h2>
+  );
+}
+
+function SectionSubtitle({
+  children,
+  center = false,
+}: {
+  children: React.ReactNode;
+  center?: boolean;
+}) {
+  return (
+    <p
+      className={`text-(--text-muted) mt-4 text-lg max-w-2xl ${
+        center ? "text-center mx-auto" : ""
+      }`}
+    >
+      {children}
+    </p>
+  );
+}
+
+function CopyButton({
+  value,
+  className = "",
+}: {
+  value: string;
+  className?: string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(value);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1400);
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className={`inline-flex items-center gap-2 rounded-lg border border-(--border-subtle) px-3 py-2 text-xs font-medium text-(--text-muted) hover:text-(--text-bold) hover:border-mantra/30 transition-colors ${className}`}
+    >
+      <svg
+        className="w-3.5 h-3.5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+      </svg>
+      {copied ? "Copied!" : "Copy"}
+    </button>
+  );
+}
+
+function InstallCommandRow({
+  label,
+  command,
+}: {
+  label: string;
+  command: string;
+}) {
+  return (
+    <div className="rounded-xl border border-(--border) bg-(--bg) overflow-hidden">
+      <div className="flex items-center justify-between gap-4 px-4 py-3 border-b border-(--border-subtle) bg-(--bg-secondary)">
+        <span className="text-xs font-mono text-(--text-muted)">{label}</span>
+        <CopyButton value={command} />
+      </div>
+      <div className="px-4 py-4 font-mono text-sm overflow-x-auto">
+        <span className="text-mantra mr-2">{label === "PowerShell" ? "PS>" : "$"}</span>
+        <span className="text-(--text-bold) whitespace-nowrap">{command}</span>
+      </div>
+    </div>
+  );
+}
+
 function HeroCommandPill() {
   const [copied, setCopied] = useState(false);
 
@@ -96,133 +206,194 @@ function HeroCommandPill() {
     <button
       onClick={handleCopy}
       aria-label="Copy install command"
-      className="group mt-8 flex items-center gap-3 rounded-lg border border-(--border) bg-(--bg-secondary) px-4 py-2.5 text-sm font-mono shadow-sm hover:border-mantra/40 transition-all duration-200 w-full max-w-3xl text-left"
+      className="group mt-8 flex items-center gap-3 rounded-xl border border-(--border) bg-(--bg-secondary) px-4 py-3 text-sm font-mono hover:border-mantra/35 transition-all duration-200 w-full max-w-2xl text-left"
     >
       <span className="text-mantra select-none shrink-0">$</span>
       <span className="flex-1 text-(--text-bold) truncate">{UNIX_CMD}</span>
       <span className="shrink-0 flex items-center gap-1 text-xs text-(--text-muted) group-hover:text-mantra transition-colors">
-        {copied ? (
-          <>
-            <svg
-              className="w-3.5 h-3.5 text-green-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-            <span className="text-green-400">Copied!</span>
-          </>
-        ) : (
-          <>
-            <svg
-              className="w-3.5 h-3.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-            Copy
-          </>
-        )}
+        {copied ? "Copied!" : "Copy"}
       </span>
     </button>
   );
 }
 
-// Full tabbed terminal box — lives only in the #install section.
-function InstallTerminalBox() {
-  const [tab, setTab] = useState<"unix" | "windows">("unix");
-  const [copied, setCopied] = useState(false);
-
-  const cmd = tab === "unix" ? UNIX_CMD : WINDOWS_CMD;
-  const prompt = tab === "unix" ? "$" : "PS>";
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(cmd);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-
+function TerminalPreview() {
   return (
-    <div className="mt-10 rounded-xl border border-(--border) bg-(--bg-secondary) overflow-hidden">
-      <div className="flex items-center justify-between px-5 border-b border-(--border-subtle) bg-(--bg)">
-        <div className="flex">
-          <button
-            onClick={() => setTab("unix")}
-            className={`px-4 py-3 text-xs font-mono border-b-2 transition-colors ${
-              tab === "unix"
-                ? "text-mantra border-mantra"
-                : "text-(--text-muted) border-transparent hover:text-(--text-bold)"
-            }`}
-          >
-            macOS & Linux
-          </button>
-          <button
-            onClick={() => setTab("windows")}
-            className={`px-4 py-3 text-xs font-mono border-b-2 transition-colors ${
-              tab === "windows"
-                ? "text-mantra border-mantra"
-                : "text-(--text-muted) border-transparent hover:text-(--text-bold)"
-            }`}
-          >
-            Windows
-          </button>
+    <div className="rounded-2xl border border-(--border) bg-(--bg) overflow-hidden terminal-glow">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-(--border-subtle) bg-(--bg-secondary)">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+          <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
+          <span className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
         </div>
-        <button
-          onClick={handleCopy}
-          className="flex items-center gap-1.5 px-3 py-1.5 mr-2 text-xs text-(--text-muted) hover:text-(--text-bold) transition-colors"
-        >
-          <svg
-            className="w-3.5 h-3.5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
-          {copied ? "Copied!" : "Copy"}
-        </button>
+        <span className="text-xs font-mono text-(--text-muted)">workspace · mantracode</span>
       </div>
-      <div className="p-5 font-mono text-sm">
+
+      <div className="p-5 sm:p-6 font-mono text-sm leading-relaxed">
         <p>
-          <span className="text-(--text-muted)">{prompt} </span>
-          <span className="text-(--text-bold)">{cmd}</span>
+          <span className="text-green-400">user</span>
+          <span className="text-(--text-muted)">@</span>
+          <span className="text-mantra">workspace</span>
+          <span className="text-(--text-muted)"> $ </span>
+          <span className="text-(--text-bold)">mantracode</span>
         </p>
-        <p className="mt-3 text-(--text-muted) text-xs border-t border-(--border-subtle) pt-3">
-          <span className="text-green-400">#</span> Then run{" "}
-          <span className="text-(--text-bold)">mantracode</span> in any project
-          directory.
-        </p>
+
+        <div className="mt-4 space-y-1 text-(--text-muted)">
+          <p>
+            <span className="text-mantra">●</span> MantraCode v1.0.0
+          </p>
+          <p>
+            <span className="text-purple-400">●</span> Mode: BUILD
+          </p>
+          <p>
+            <span className="text-sky-400">●</span> Model: Gemini 2.5 Pro
+          </p>
+        </div>
+
+        <div className="mt-5 rounded-xl border border-(--border-subtle) bg-(--bg-secondary) p-4">
+          <p className="text-(--text-bold)">
+            Refactor the auth flow, improve loading states, and generate the updated API handlers.
+          </p>
+        </div>
+
+        <div className="mt-5 space-y-2 text-(--text-muted)">
+          <p>
+            <span className="text-mantra">›</span> Inspecting routes, middleware, and session helpers…
+          </p>
+          <p>
+            <span className="text-mantra">›</span> Updating files with new auth guard logic…
+          </p>
+          <p>
+            <span className="text-mantra">›</span> Preparing patch and follow-up steps…
+          </p>
+        </div>
       </div>
     </div>
   );
 }
 
-function FeatureCard({
-  icon,
-  title,
-  description,
+function HeroStat({
+  value,
+  label,
 }: {
-  icon: React.ReactNode;
-  title: string;
-  description: React.ReactNode;
+  value: string;
+  label: string;
 }) {
   return (
-    <div className="group rounded-xl border border-(--border-subtle) bg-(--bg-secondary) p-5 hover:border-mantra/20 hover:bg-(--bg-hover) transition-all duration-300">
-      <div className="w-9 h-9 rounded-lg bg-mantra/10 border border-mantra/20 flex items-center justify-center text-mantra mb-3 group-hover:bg-mantra/15 transition-colors">
-        {icon}
+    <div className="rounded-xl border border-(--border) bg-(--bg-secondary) px-4 py-4">
+      <p className="text-lg font-semibold text-(--text-bold)">{value}</p>
+      <p className="mt-1 text-sm text-(--text-muted)">{label}</p>
+    </div>
+  );
+}
+
+function FeatureTile({
+  title,
+  description,
+  badge,
+  className = "",
+}: {
+  title: string;
+  description: string;
+  badge: string;
+  className?: string;
+}) {
+  return (
+    <article
+      className={`rounded-2xl border border-(--border) bg-(--bg-secondary) p-5 sm:p-6 ${className}`}
+    >
+      <span className="inline-flex rounded-full border border-mantra/20 bg-mantra/10 px-2.5 py-1 text-[11px] font-mono text-mantra">
+        {badge}
+      </span>
+      <h3 className="mt-4 text-lg sm:text-xl font-semibold tracking-tight text-(--text-bold)">
+        {title}
+      </h3>
+      <p className="mt-3 text-sm sm:text-base text-(--text-muted) leading-relaxed">
+        {description}
+      </p>
+    </article>
+  );
+}
+
+function FlowCard({
+  step,
+  title,
+  desc,
+}: {
+  step: string;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-(--border) bg-(--bg-secondary) p-5 sm:p-6">
+      <div className="flex items-center justify-between gap-4">
+        <span className="inline-flex w-10 h-10 items-center justify-center rounded-xl border border-mantra/20 bg-mantra/10 text-sm font-mono font-bold text-mantra">
+          {step}
+        </span>
+        <div className="h-px flex-1 mantra-divider" />
       </div>
-      <h3 className="font-semibold text-sm mb-2 text-(--text-bold)">{title}</h3>
-      <p className="text-(--text-muted) text-sm leading-relaxed">{description}</p>
+      <h3 className="mt-4 text-lg font-semibold tracking-tight text-(--text-bold)">
+        {title}
+      </h3>
+      <p className="mt-2 text-sm text-(--text-muted) leading-relaxed">{desc}</p>
+    </div>
+  );
+}
+
+function CommandCard({
+  cmd,
+  desc,
+}: {
+  cmd: string;
+  desc: string;
+}) {
+  return (
+    <div className="rounded-xl border border-(--border) bg-(--bg-secondary) p-4">
+      <div className="flex items-start justify-between gap-4">
+        <span className="inline-flex rounded-lg border border-mantra/20 bg-mantra/10 px-3 py-1.5 text-sm font-mono text-mantra">
+          {cmd}
+        </span>
+      </div>
+      <p className="mt-3 text-sm text-(--text-muted) leading-relaxed">{desc}</p>
+    </div>
+  );
+}
+
+function ModelCard({
+  name,
+  type,
+  price,
+}: {
+  name: string;
+  type: string;
+  price: string;
+}) {
+  const chipClass =
+    type === "Pro"
+      ? "border-purple-500/20 bg-purple-500/10 text-purple-400"
+      : type.includes("Lite")
+      ? "border-amber-500/20 bg-amber-500/10 text-amber-400"
+      : "border-mantra/20 bg-mantra/10 text-mantra";
+
+  return (
+    <div className="rounded-2xl border border-(--border) bg-(--bg-secondary) p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-semibold tracking-tight text-(--text-bold)">
+            {name}
+          </h3>
+          <p className="mt-1 text-sm text-(--text-muted)">Native reasoning support on Vertex AI.</p>
+        </div>
+        <span className={`inline-flex text-nowrap rounded-full border px-2.5 py-1 text-xs ${chipClass}`}>
+          {type}
+        </span>
+      </div>
+      <div className="mt-5 pt-4 border-t border-(--border-subtle)">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-(--text-muted)">
+          Pricing / 1M tokens
+        </p>
+        <p className="mt-1 text-sm font-mono text-(--text-bold)">{price}</p>
+      </div>
     </div>
   );
 }
@@ -275,13 +446,13 @@ export default function Home() {
 
   return (
     <>
-      {/* NAV */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-nav backdrop-blur-md border-b border-(--border-subtle)">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-nav/90 backdrop-blur-md border-b border-(--border-subtle)">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <span className="font-bold text-lg tracking-tight">
-            <span className="text-mantra">Mantra</span>Code
+            <span className="text-mantra">Mantra</span> Code
           </span>
-          <div className="flex items-center gap-6 text-sm text-(--text-muted)">
+
+          <div className="hidden md:flex items-center gap-6 text-sm text-(--text-muted)">
             <a href="#features" className="hover:text-(--text-bold) transition-colors">
               Features
             </a>
@@ -298,6 +469,15 @@ export default function Home() {
               className="hover:text-(--text-bold) transition-colors"
             >
               GitHub
+            </a>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <a
+              href="#install"
+              className="hidden sm:inline-flex items-center rounded-lg bg-mantra px-4 py-2 text-sm font-semibold text-white hover:bg-mantra-light transition-colors"
+            >
+              Install
             </a>
             <button
               onClick={toggleTheme}
@@ -331,492 +511,299 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* HERO — grid background only on this section */}
-      <section className="hero-grid min-h-screen flex flex-col items-center justify-center px-6 pt-20 pb-24 relative overflow-hidden">
-        <div
-          className="absolute inset-0 pointer-events-none z-1"
-          style={{
-            background:
-              "radial-gradient(ellipse 100% 80% at 50% 10%, transparent 30%, var(--bg, #ffffff) 75%)",
-          }}
-        />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-175 h-90 bg-mantra/6 rounded-full blur-3xl pointer-events-none z-2" />
-
-        <div className="relative z-3 flex flex-col items-center text-center max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-(--border) bg-(--overlay) text-sm text-(--text-muted) mb-8">
-            <span className="w-2 h-2 rounded-full bg-mantra animate-pulse" />
-            v1.0.0 — Agentic AI in Your Terminal
-          </div>
-
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
-            <span className="text-mantra">Mantra</span>Code
-          </h1>
-          <p className="text-xl sm:text-2xl text-(--text-muted) mt-4 max-w-xl">
-            An agentic AI coding assistant that runs entirely inside your terminal.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center gap-4 mt-10">
-            <a
-              href="#install"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-mantra text-white font-semibold hover:bg-mantra-light transition-colors text-sm"
-            >
-              Get Started
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M17 8l4 4m0 0l-4 4m4-4H3"
-                />
-              </svg>
-            </a>
-            <a
-              href={GITHUB_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-(--border) text-(--text-bold) font-semibold hover:bg-(--overlay) transition-colors text-sm"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
-              </svg>
-              View on GitHub
-            </a>
-          </div>
-
-          <HeroCommandPill />
+      <section className="hero-grid relative overflow-hidden px-6 pt-28 pb-20 sm:pt-32 sm:pb-24 min-h-screen flex items-center">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="hero-orb absolute top-[-8rem] left-1/2 -translate-x-1/2 w-[36rem] h-[36rem]" />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse 90% 70% at 50% 12%, transparent 35%, var(--bg, #ffffff) 78%)",
+            }}
+          />
         </div>
 
-        <div className="relative z-3 mt-16 w-full max-w-3xl">
-          <div className="rounded-xl border border-(--border) bg-(--bg) overflow-hidden shadow-2xl">
-            <div className="flex items-center gap-1.5 px-4 py-3 border-b border-(--border-subtle) bg-(--bg-secondary)">
-              <span className="w-3 h-3 rounded-full bg-red-500/80" />
-              <span className="w-3 h-3 rounded-full bg-yellow-500/80" />
-              <span className="w-3 h-3 rounded-full bg-green-500/80" />
-              <span className="ml-3 text-xs text-(--text-muted) font-mono">
-                mantracode
-              </span>
+        <div className="relative z-10 max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-14 items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-(--border) bg-(--overlay) text-sm text-(--text-muted)">
+              <span className="w-2 h-2 rounded-full bg-mantra animate-pulse" />
+              v1.0.0 · Agentic AI in your terminal
             </div>
-            <div className="p-5 font-mono text-sm leading-relaxed">
-              <p>
-                <span className="text-green-400">user</span>
-                <span className="text-(--text-muted)">@</span>
-                <span className="text-mantra">workspace</span>
-                <span className="text-(--text-muted)"> $ </span>
-                <span className="text-(--text-bold)">mantracode</span>
-              </p>
-              <p className="mt-2 text-(--text-muted)">
-                <span className="text-mantra">●</span> MantraCode v1.0.0
-              </p>
-              <p className="text-(--text-muted)">
-                <span className="text-purple-400">●</span> Mode: BUILD
-              </p>
-              <p className="mt-3">
-                <span className="text-(--text-bold)">Ask anything...</span>
-                <span className="animate-pulse text-mantra">▊</span>
-              </p>
+
+            <h1 className="mt-8 text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[0.95] text-(--text-bold)">
+              Code faster
+              <br />
+              without leaving
+              <br />
+              <span className="text-mantra">your terminal.</span>
+            </h1>
+
+            <p className="mt-6 text-lg sm:text-xl text-(--text-muted) max-w-xl leading-relaxed">
+              MantraCode is an AI coding assistant built for terminal-native development:
+              inspect context, edit files, switch models, and ship changes without
+              breaking your flow.
+            </p>
+
+            <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <a
+                href="#install"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-mantra text-white font-semibold hover:bg-mantra-light transition-colors text-sm"
+              >
+                Install MantraCode
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M17 8l4 4m0 0l-4 4m4-4H3"
+                  />
+                </svg>
+              </a>
+
+              <a
+                href={GITHUB_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-(--border) text-(--text-bold) font-semibold hover:bg-(--overlay) transition-colors text-sm"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+                </svg>
+                View on GitHub
+              </a>
             </div>
+
+            <HeroCommandPill />
+
+            <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl">
+              <HeroStat value="6 models" label="Switch across Gemini tiers." />
+              <HeroStat value="7 tools" label="Read, edit, grep, shell, and more." />
+              <HeroStat value="2 modes" label="PLAN for context, BUILD for execution." />
+            </div>
+          </div>
+
+          <div className="relative">
+            <TerminalPreview />
           </div>
         </div>
       </section>
 
-      {/* FEATURES */}
-      <section id="features" className="px-6 py-24 max-w-6xl mx-auto scroll-mt-20">
-        <SectionTitle>
-          Everything a developer needs, in one{" "}
-          <span className="text-mantra">terminal</span>
-        </SectionTitle>
-        <SectionSubtitle>
-          Dual agent modes, multiple AI models, file tooling, session history, and more — no context switching.
-        </SectionSubtitle>
+      <section id="features" className="px-6 py-24 max-w-6xl mx-auto scroll-mt-20 section-shell">
+        <div className="max-w-3xl">
+          <SectionEyebrow>Features</SectionEyebrow>
+          <div className="mt-4">
+            <SectionTitle>
+              Everything you need to work inside one{" "}
+              <span className="text-mantra">terminal workflow</span>
+            </SectionTitle>
+          </div>
+          <SectionSubtitle>
+            Model access, workspace tooling, session continuity, and terminal-native controls
+            designed to stay out of your way while you build.
+          </SectionSubtitle>
+        </div>
 
-        <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <FeatureCard
-            icon={
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42"
-                />
-              </svg>
-            }
-            title="Dual Agent Modes"
-            description={
-              <>
-                <Code>PLAN</Code> mode for read-only context discovery (search,
-                read, grep). <Code>BUILD</Code> mode for full code generation and
-                file modification.
-              </>
-            }
+        <div className="mt-14 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <FeatureTile
+            badge="Modes"
+            title="PLAN before BUILD."
+            description="Separate discovery from execution so you can inspect context first and only modify files when you actually mean to."
+            className="xl:col-span-2"
           />
-          <FeatureCard
-            icon={
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
-                />
-              </svg>
-            }
-            title="Rich Terminal UI"
-            description="Custom Markdown rendering, real-time code syntax highlighting (10+ languages), visual code diffs, collapsible reasoning trees, and letter-by-letter streaming reveal."
+          <FeatureTile
+            badge="Models"
+            title="Switch model tiers."
+            description="Move between faster flash models and deeper pro models depending on latency, cost, and reasoning needs."
           />
-          <FeatureCard
-            icon={
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
-                />
-              </svg>
-            }
-            title="6 AI Models"
-            description="Powered by Google Vertex AI — Gemini 2.5 Pro/Flash, Gemini 3.1 Pro/Flash, and more. Each with native thinking and reasoning support."
+          <FeatureTile
+            badge="Tools"
+            title="Operate on real files."
+            description="Read, write, edit, grep, list directories, and run shell commands without jumping into separate utilities."
           />
-          <FeatureCard
-            icon={
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.39 48.39 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.036 1.007-1.875 2.25-1.875s2.25.84 2.25 1.875c0 .369-.128.713-.349 1.003-.215.283-.401.604-.401.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.036 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.369 0 .713.128 1.003.349.283.215.604.401.959.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z"
-                />
-              </svg>
-            }
-            title="7 Workspace Tools"
-            description="Read, write, edit, glob, grep, bash, and list directory — all with path traversal protection and .env file restrictions."
+          <FeatureTile
+            badge="Interface"
+            title="Readable terminal output."
+            description="Streaming responses, markdown rendering, syntax highlighting, diffs, and structured output keep long sessions usable."
           />
-          <FeatureCard
-            icon={
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
-                />
-              </svg>
-            }
-            title="Session Management"
-            description="Persistent PostgreSQL storage, auto-naming via AI, history browser with search, and auto-resume of interrupted streams."
+          <FeatureTile
+            badge="Sessions"
+            title="Resume where you left off."
+            description="Keep session history, revisit past threads, and continue interrupted work instead of restarting from zero."
           />
-          <FeatureCard
-            icon={
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-            }
-            title="35+ Themes"
-            description="Catppuccin, Dracula, Tokyo Night, Nord, and many more — with live preview and local persistence."
+          <FeatureTile
+            badge="Customization"
+            title="Themes that fit your setup."
+            description="Choose from multiple terminal themes with persistent preferences and a UI that still prioritizes clarity over decoration."
           />
-          <FeatureCard
-            icon={
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-                />
-              </svg>
-            }
-            title="Auth & Billing"
-            description="OAuth 2.0 PKCE via Clerk. INR-based credit system with Polar checkout, customer portal, and usage metering."
-          />
-          <FeatureCard
-            icon={
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 01-.923 1.785A5.969 5.969 0 006 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337z"
-                />
-              </svg>
-            }
-            title="Smart Input"
-            description="File @-mentions with auto-completion, multi-line paste collapse, keyboard-driven command menu — all inside a beautiful TUI."
-          />
-          <FeatureCard
-            icon={
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z"
-                />
-              </svg>
-            }
-            title="WebSocket Tunnel"
-            description="Secure tunnel between the server and CLI for tool execution on your local filesystem — AI runs in the cloud, tools run on your machine."
+          <FeatureTile
+            badge="Account"
+            title="Auth, usage, billing."
+            description="Handle login, usage, and credits from the same product surface without fragmenting the workflow."
           />
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
-      <section className="px-6 py-24 max-w-6xl mx-auto">
-        <SectionTitle>
-          How it <span className="text-mantra">works</span>
-        </SectionTitle>
-        <SectionSubtitle>
-          From install to productivity in under a minute.
-        </SectionSubtitle>
+      <section className="px-6 py-24 max-w-6xl mx-auto section-shell">
+        <div className="max-w-3xl">
+          <SectionEyebrow>Workflow</SectionEyebrow>
+          <div className="mt-4">
+            <SectionTitle>
+              From install to productive in a few{" "}
+              <span className="text-mantra">terminal steps</span>
+            </SectionTitle>
+          </div>
+          <SectionSubtitle>
+            Start in the shell, connect your workspace, and move straight into actual coding work.
+          </SectionSubtitle>
+        </div>
 
-        <div className="mt-16 grid grid-cols-1 md:grid-cols-4 gap-8">
-          {[
-            {
-              step: "01",
-              title: "Install",
-              desc: "Run the one-liner curl command. It installs Bun (if needed) and sets up MantraCode globally.",
-            },
-            {
-              step: "02",
-              title: "Run",
-              desc: "Type mantracode in any project directory. The terminal UI opens instantly.",
-            },
-            {
-              step: "03",
-              title: "Authenticate",
-              desc: "Log in via browser (Clerk OAuth 2.0 PKCE) or skip for limited local use.",
-            },
-            {
-              step: "04",
-              title: "Code",
-              desc: "Ask questions, generate code, debug issues, refactor files — all from your terminal.",
-            },
-          ].map((item) => (
-            <div key={item.step} className="text-center">
-              <div className="w-12 h-12 rounded-xl bg-mantra/10 border border-mantra/20 flex items-center justify-center mx-auto mb-4">
-                <span className="text-mantra font-bold text-sm">{item.step}</span>
+        <div className="mt-14 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <FlowCard
+            step="01"
+            title="Install"
+            desc="Run one command and let the installer handle setup, including Bun when required."
+          />
+          <FlowCard
+            step="02"
+            title="Open project"
+            desc="Launch MantraCode from any repository or working directory with a single terminal command."
+          />
+          <FlowCard
+            step="03"
+            title="Authenticate"
+            desc="Sign in through the browser for full cloud access, or continue with limited local usage."
+          />
+          <FlowCard
+            step="04"
+            title="Build"
+            desc="Inspect files, generate code, refactor logic, and debug issues without leaving the terminal."
+          />
+        </div>
+      </section>
+
+      <section id="install" className="px-6 py-24 max-w-6xl mx-auto scroll-mt-20 section-shell">
+        <div className="rounded-3xl border border-(--border) bg-(--bg-secondary) overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr]">
+            <div className="p-8 sm:p-10 lg:p-12 border-b lg:border-b-0 lg:border-r border-(--border-subtle)">
+              <SectionEyebrow>Install</SectionEyebrow>
+              <div className="mt-4">
+                <SectionTitle>
+                  Get started in <span className="text-mantra">one command</span>
+                </SectionTitle>
               </div>
-              <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-              <p className="text-(--text-muted) text-sm leading-relaxed">
-                {item.desc}
-              </p>
+              <SectionSubtitle>
+                Install MantraCode on macOS, Linux, or Windows, then run it inside any project directory.
+              </SectionSubtitle>
+
+              <div className="mt-8 space-y-3 text-sm text-(--text-muted)">
+                <div className="flex items-start gap-3">
+                  <span className="text-mantra mt-0.5">▸</span>
+                  <span>macOS 12+, Linux, or Windows (x86_64 / arm64).</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-mantra mt-0.5">▸</span>
+                  <span>Git for repository-based workflows.</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-mantra mt-0.5">▸</span>
+                  <span>Google Vertex AI project for cloud-hosted models.</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="text-mantra mt-0.5">▸</span>
+                  <span>About 50MB of free disk space.</span>
+                </div>
+              </div>
+
+              <div className="mt-8 rounded-2xl border border-(--border-subtle) bg-(--bg) p-4">
+                <p className="text-sm text-(--text-muted)">
+                  After install, run <Code>mantracode</Code> in any project folder.
+                </p>
+              </div>
             </div>
-          ))}
+
+            <div className="p-8 sm:p-10 lg:p-12">
+              <div className="space-y-4">
+                <InstallCommandRow label="macOS / Linux" command={UNIX_CMD} />
+                <InstallCommandRow label="PowerShell" command={WINDOWS_CMD} />
+              </div>
+
+              <div className="mt-6 rounded-2xl border border-(--border) bg-(--bg) overflow-hidden">
+                <div className="px-4 py-3 border-b border-(--border-subtle) bg-(--bg-secondary)">
+                  <span className="text-xs font-mono text-(--text-muted)">Next step</span>
+                </div>
+                <div className="p-4 font-mono text-sm">
+                  <span className="text-mantra">$</span>
+                  <span className="ml-2 text-(--text-bold)">mantracode</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* INSTALL */}
-      <section id="install" className="px-6 py-24 max-w-3xl mx-auto scroll-mt-20">
-        <SectionTitle>
-          Get started in <span className="text-mantra">one command</span>
-        </SectionTitle>
-        <SectionSubtitle>
-          Works on macOS, Linux, and Windows. The install script handles
-          everything.
-        </SectionSubtitle>
+      <section id="commands" className="px-6 py-24 max-w-6xl mx-auto scroll-mt-20 section-shell">
+        <div className="max-w-3xl">
+          <SectionEyebrow>Commands</SectionEyebrow>
+          <div className="mt-4">
+            <SectionTitle>
+              <span className="text-mantra">Slash</span> commands for fast control
+            </SectionTitle>
+          </div>
+          <SectionSubtitle>
+            Open the command menu with <Code>/</Code> and switch sessions, models, themes,
+            and account actions without breaking flow.
+          </SectionSubtitle>
+        </div>
 
-        <InstallTerminalBox />
-
-        <div className="mt-8 rounded-xl border border-(--border) bg-(--bg-secondary) p-5">
-          <h3 className="font-semibold text-sm mb-2">Prerequisites</h3>
-          <ul className="text-sm text-(--text-muted) space-y-1.5">
-            <li className="flex items-start gap-2">
-              <span className="text-mantra mt-0.5">▸</span>macOS 12+, Linux, or
-              Windows (x86_64 / arm64)
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-mantra mt-0.5">▸</span>Git (for
-              repository-based workflows)
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-mantra mt-0.5">▸</span>A Google Vertex AI
-              project (for cloud-hosted models)
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-mantra mt-0.5">▸</span>50MB free disk space
-            </li>
-          </ul>
+        <div className="mt-14 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <CommandCard cmd="/new" desc="Start a fresh conversation." />
+          <CommandCard cmd="/reload" desc="Reload the current session." />
+          <CommandCard cmd="/agents" desc="Switch between PLAN and BUILD modes." />
+          <CommandCard cmd="/models" desc="Change the active AI model." />
+          <CommandCard cmd="/sessions" desc="Browse, search, and resume past sessions." />
+          <CommandCard cmd="/theme" desc="Switch themes with live preview." />
+          <CommandCard cmd="/login" desc="Authenticate via browser." />
+          <CommandCard cmd="/logout" desc="Clear credentials." />
+          <CommandCard cmd="/upgrade" desc="Open checkout for more credits." />
+          <CommandCard cmd="/usage" desc="Open the customer portal." />
+          <CommandCard cmd="/profile" desc="View account info and credit balance." />
+          <CommandCard cmd="/exit" desc="Quit MantraCode." />
         </div>
       </section>
 
-      {/* CLI COMMANDS */}
-      <section id="commands" className="px-6 py-24 max-w-4xl mx-auto scroll-mt-20">
-        <SectionTitle>
-          <span className="text-mantra">Slash</span> Commands
-        </SectionTitle>
-        <SectionSubtitle>
-          Everything you need at your fingertips. Press <Code>/</Code> in the
-          input bar to open the command menu.
-        </SectionSubtitle>
+      <section className="px-6 py-24 max-w-6xl mx-auto section-shell">
+        <div className="max-w-3xl">
+          <SectionEyebrow>Models</SectionEyebrow>
+          <div className="mt-4">
+            <SectionTitle>
+              Supported <span className="text-mantra">models</span>
+            </SectionTitle>
+          </div>
+          <SectionSubtitle>
+            Choose faster flash tiers for responsiveness or pro tiers for deeper reasoning and more complex coding work.
+          </SectionSubtitle>
+        </div>
 
-        <div className="mt-12 rounded-xl border border-(--border) overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-(--border-subtle) bg-(--bg-secondary)">
-                <th className="text-left px-5 py-3 font-semibold text-(--text-muted)">
-                  Command
-                </th>
-                <th className="text-left px-5 py-3 font-semibold text-(--text-muted)">
-                  Description
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                ["/new", "Start a fresh conversation"],
-                ["/reload", "Reload the current session"],
-                ["/agents", "Switch between PLAN and BUILD modes"],
-                ["/models", "Change the AI model"],
-                ["/sessions", "Browse, search, and resume past sessions"],
-                ["/theme", "Choose from 35+ themes with live preview"],
-                ["/login", "Authenticate via browser (Clerk OAuth)"],
-                ["/logout", "Clear credentials"],
-                ["/upgrade", "Open Polar checkout for credits"],
-                ["/usage", "Open Polar customer portal"],
-                ["/profile", "View account info and credit balance"],
-                ["/exit", "Quit MantraCode"],
-              ].map(([cmd, desc]) => (
-                <tr
-                  key={cmd}
-                  className="border-b border-(--border-subtle) last:border-0 hover:bg-(--overlay-hover) transition-colors"
-                >
-                  <td className="px-5 py-3 font-mono text-mantra">{cmd}</td>
-                  <td className="px-5 py-3 text-(--text-muted)">{desc}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="mt-14 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <ModelCard name="Gemini 2.5 Flash" type="Flash" price="₹5 / ₹20" />
+          <ModelCard name="Gemini 2.5 Flash Lite" type="Flash Lite" price="₹3 / ₹12" />
+          <ModelCard name="Gemini 2.5 Pro" type="Pro" price="₹15 / ₹60" />
+          <ModelCard name="Gemini 3.1 Flash Lite" type="Flash Lite" price="₹3 / ₹12" />
+          <ModelCard name="Gemini 3.1 Pro" type="Pro" price="₹15 / ₹60" />
+          <ModelCard name="Gemini 3.5 Flash" type="Flash" price="₹5 / ₹20" />
         </div>
       </section>
 
-      {/* MODELS */}
-      <section className="px-6 py-24 max-w-4xl mx-auto">
-        <SectionTitle>
-          Supported <span className="text-mantra">Models</span>
-        </SectionTitle>
-        <SectionSubtitle>
-          Powered by Google Vertex AI — each model with native thinking and
-          reasoning support.
-        </SectionSubtitle>
-
-        <div className="mt-12 rounded-xl border border-(--border) overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-(--border-subtle) bg-(--bg-secondary)">
-                <th className="text-left px-5 py-3 font-semibold text-(--text-muted)">
-                  Model
-                </th>
-                <th className="text-left px-5 py-3 font-semibold text-(--text-muted)">
-                  Type
-                </th>
-                <th className="text-left px-5 py-3 font-semibold text-(--text-muted)">
-                  Pricing (per 1M tokens)
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                ["Gemini 2.5 Flash", "Flash", "₹5 / ₹20"],
-                ["Gemini 2.5 Flash Lite", "Flash (Lite)", "₹3 / ₹12"],
-                ["Gemini 2.5 Pro", "Pro", "₹15 / ₹60"],
-                ["Gemini 3.1 Flash Lite", "Flash (Lite)", "₹3 / ₹12"],
-                ["Gemini 3.1 Pro", "Pro", "₹15 / ₹60"],
-                ["Gemini 3.5 Flash", "Flash", "₹5 / ₹20"],
-              ].map(([model, type, price]) => (
-                <tr
-                  key={model}
-                  className="border-b border-(--border-subtle) last:border-0 hover:bg-(--overlay-hover) transition-colors"
-                >
-                  <td className="px-5 py-3 font-medium text-(--text-bold)">
-                    {model}
-                  </td>
-                  <td className="px-5 py-3">
-                    <span
-                      className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                        type === "Pro"
-                          ? "bg-purple-500/10 text-purple-400 border border-purple-500/20"
-                          : "bg-mantra/10 text-mantra border border-mantra/20"
-                      }`}
-                    >
-                      {type}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-(--text-muted) font-mono">
-                    {price}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* FOOTER */}
       <footer className="border-t border-(--border-subtle) px-6 py-12">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2 text-sm text-(--text-muted)">
             <span className="font-bold text-(--text-bold)">
-              <span className="text-mantra">Mantra</span>Code
+              <span className="text-mantra">Mantra</span> Code
             </span>
             <span>·</span>
             <span>Built by Nishant Chauhan</span>

@@ -90,10 +90,12 @@ binary_install() {
   elif command -v wget &>/dev/null; then
     http_code="$(wget -q -O "${tmpdir}/${LOCAL_NAME}" "$url" 2>/dev/null && echo "200" || echo "failed")"
   else
+    trap - EXIT
     return 1
   fi
 
   if [[ "$http_code" != "200" ]]; then
+    trap - EXIT
     return 1
   fi
 
