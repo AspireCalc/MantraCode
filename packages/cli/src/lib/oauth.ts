@@ -34,6 +34,97 @@ function getErrorMessage(error: unknown) {
     return error instanceof Error ? error.message : String(error);
 }
 
+const ASCII_BANNER = `┌─────────────────────────────────────┐
+│          MantraCode CLI              │
+└─────────────────────────────────────┘`;
+
+function htmlPage(title: string, body: string, success: boolean): string {
+    const fg = success ? "#059669" : "#dc2626";
+    const accentBg = success ? "#ecfdf5" : "#fef2f2";
+    const accentBorder = success ? "#a7f3d0" : "#fecaca";
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${title}</title>
+<style>
+  body {
+    font-family: 'Courier New', 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+    background: #fafafa;
+    color: #1e293b;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    margin: 0;
+    padding: 2rem;
+    text-align: center;
+  }
+  .logo {
+    font-size: 13px;
+    line-height: 1.15;
+    color: #0f172a;
+    letter-spacing: -0.5px;
+    margin-bottom: 2.5rem;
+    white-space: pre;
+  }
+  .status {
+    background: ${accentBg};
+    border: 2px solid ${accentBorder};
+    border-radius: 0;
+    padding: 1.25rem 2rem;
+    max-width: 540px;
+    width: 100%;
+    animation: fadeIn 0.35s ease-out;
+  }
+  h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: ${fg};
+    margin: 0 0 0.5rem 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  p {
+    font-size: 0.875rem;
+    color: #475569;
+    margin: 0;
+    line-height: 1.6;
+  }
+  .detail {
+    font-size: 0.8125rem;
+    background: #f1f5f9;
+    padding: 0.75rem 1rem;
+    margin-top: 0.75rem;
+    word-break: break-word;
+    color: ${fg};
+    border-left: 3px solid ${fg};
+  }
+  .footer {
+    margin-top: 2rem;
+    font-size: 0.8125rem;
+    color: #94a3b8;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+<div class="logo">${ASCII_BANNER}</div>
+<div class="status">
+  <h1>${title}</h1>
+  ${body}
+</div>
+<div class="footer">Close this tab and return to the terminal.</div>
+<script>
+  ${success ? 'setTimeout(() => window.close(), 2000);' : ''}
+</script>
+</body>
+</html>`;
+}
+
 export async function performLogin() {
     const clerkFrontendAPI = process.env.CLERK_FRONTEND_API;
     const clientId = process.env.CLERK_OAUTH_CLIENT_ID;
@@ -55,7 +146,7 @@ export async function performLogin() {
                 const url = new URL(req.url);
 
                 if (url.pathname !== "/callback") {
-                    return new Response("Not found", { status: 404 });
+                    return new Response(htmlPage("Not Found", "<p>The callback endpoint was not found.</p>", false), { status: 404, headers: { "Content-Type": "text/html" } });
                 }
 
                 const error = url.searchParams.get("error");
@@ -64,7 +155,7 @@ export async function performLogin() {
                     settled = true;
                     reject(new Error(msg));
                     setTimeout(() => server.stop(), 500);
-                    return new Response(`Authentication failed: ${msg}`, { status: 400 });
+                    return new Response(htmlPage("Authentication Failed", `<p>The OAuth provider returned an error.</p><div class="detail">${msg}</div>`, false), { status: 400, headers: { "Content-Type": "text/html" } });
                 }
 
                 const code = url.searchParams.get("code");
@@ -73,7 +164,7 @@ export async function performLogin() {
                     settled = true;
                     reject(new Error("Missing code or state"));
                     setTimeout(() => server.stop(), 500);
-                    return new Response("Bad request", { status: 400 });
+                    return new Response(htmlPage("Bad Request", "<p>The callback request was missing required parameters.</p>", false), { status: 400, headers: { "Content-Type": "text/html" } });
                 }
 
                 try {
@@ -85,7 +176,7 @@ export async function performLogin() {
                     settled = true;
                     reject(err);
                     setTimeout(() => server.stop(), 500);
-                    return new Response("Invalid state", { status: 400 });
+                    return new Response(htmlPage("Invalid State", `<p>${getErrorMessage(err)}</p>`, false), { status: 400, headers: { "Content-Type": "text/html" } });
                 }
 
                 try {
@@ -116,13 +207,13 @@ export async function performLogin() {
                     saveAuth({ token: tokenData.access_token });
                     resolve({ token: tokenData.access_token });
                     setTimeout(() => server.stop(), 500);
-                    return new Response("Authenticated! You can close this tab.");
+                    return new Response(htmlPage("Authenticated!", "<p>Your authentication was successful. You are now signed in to MantraCode CLI.</p>", true), { headers: { "Content-Type": "text/html" } });
                 } catch (err) {
                     settled = true;
                     reject(err);
                     const message = getErrorMessage(err);
                     setTimeout(() => server.stop(), 500);
-                    return new Response(`Authentication failed: ${message}`, { status: 400 });
+                    return new Response(htmlPage("Authentication Failed", `<p>Failed to exchange the authorization code for a token.</p><div class="detail">${message}</div>`, false), { status: 400, headers: { "Content-Type": "text/html" } });
                 }
             },
         });

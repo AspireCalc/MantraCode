@@ -1,0 +1,19 @@
+#!/usr/bin/env bun
+
+import dotenv from "dotenv";
+import path from "node:path";
+
+// Load environment variables from the workspace root during development
+dotenv.config({
+  path: path.resolve(import.meta.dirname, "../../../.env"),
+  quiet: true,
+});
+
+// Load environment variables from the current working directory
+dotenv.config({
+  path: path.resolve(process.cwd(), ".env"),
+  quiet: true,
+});
+
+// Import and execute the CLI main entrypoint
+await import("../src/index.tsx");
