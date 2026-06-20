@@ -1,6 +1,6 @@
 {
   "name": "@aspirenx/mantracode",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "module": "dist/index.js",
   "type": "module",
   "bin": "./bin/mantracode",
@@ -12,7 +12,7 @@
   "scripts": {
     "dev": "bun run --watch src/index.tsx",
     "build": "bash scripts/build-cli.sh",
-    "preinstall": "node -e \"if(!process.env.npm_config_global){console.error();console.error('@aspirenx/mantracode can only be installed globally.');console.error();console.error('  npm install -g @aspirenx/mantracode');console.error();process.exit(1)}\"",
+    "preinstall": "node -e \"if(process.env.npm_config_global&&process.env.npm_config_global!=='true'){console.error();console.error('@aspirenx/mantracode can only be installed globally.');console.error();console.error('  npm install -g @aspirenx/mantracode');console.error();process.exit(1)}\"",
     "prepublish": "bun run build"
   },
   "devDependencies": {

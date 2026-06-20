@@ -11,7 +11,7 @@
     },
     "packages/cli": {
       "name": "@aspirenx/mantracode",
-      "version": "1.0.2",
+      "version": "1.0.6",
       "bin": "./bin/mantracode",
       "dependencies": {
         "@ai-sdk/react": "^3.0.209",
